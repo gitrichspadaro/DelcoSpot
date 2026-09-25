@@ -7,7 +7,9 @@ database models, and auth get added on top of this as the Implementation
 Checklist items get built out.
 """
 import os
+import secrets
 from flask import Flask, jsonify
+from flask_login import LoginManager
 
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -26,6 +28,20 @@ if SENTRY_DSN:
         traces_sample_rate=1.0,
     )
 
+login_manager = LoginManager()
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
+
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    # This is an API, not a page-based site (yet), so respond with JSON
+    # instead of Flask-Login's default behavior of redirecting to a login page.
+    return jsonify({"errors": {"auth": "Login required."}}), 401
+
 
 def create_app():
     app = Flask(__name__)
@@ -39,11 +55,31 @@ def create_app():
     # requires "postgresql://" instead, so rewrite it if needed.
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
+    # Be explicit about the driver so SQLAlchemy doesn't try to guess
+    # between psycopg2 (what's actually installed, via psycopg2-binary)
+    # and psycopg/psycopg3 (a different, separate package it might
+    # otherwise auto-prefer and fail to find).
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+    is_production = database_url != "sqlite:///dev.db"
 
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
 
+    # SECRET_KEY signs the session cookie. Set a real, stable value via the
+    # SECRET_KEY environment variable on Render -- otherwise a new random
+    # key is generated on every restart, which silently logs everyone out
+    # on each redeploy.
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    # Secure cookies only work over HTTPS, which is fine on Render but would
+    # block the session cookie during local http://localhost testing.
+    app.config["SESSION_COOKIE_SECURE"] = is_production
+
     db.init_app(app)
+    login_manager.init_app(app)
 
     with app.app_context():
         # Creates the users/incidents tables if they don't exist yet.
