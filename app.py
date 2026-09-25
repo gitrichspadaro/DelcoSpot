@@ -9,6 +9,20 @@ Checklist items get built out.
 import os
 from flask import Flask, jsonify
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+SENTRY_DSN = os.environ.get("SENTRY_DSN")
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[FlaskIntegration()],
+        # Percentage of requests to trace for performance monitoring.
+        # 1.0 = 100%; fine at this scale, dial down once there's real traffic.
+        traces_sample_rate=1.0,
+    )
+
 
 def create_app():
     app = Flask(__name__)
@@ -28,6 +42,12 @@ def create_app():
         # connection once one exists.
         return jsonify({"status": "healthy"}), 200
 
+    @app.get("/debug-sentry")
+    def trigger_error():
+        # Temporary route to confirm Sentry is actually receiving errors.
+        # Safe to delete once you've seen one show up in the Sentry dashboard.
+        1 / 0
+
     return app
 
 
@@ -38,3 +58,4 @@ if __name__ == "__main__":
     # 5000 for local development.
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
