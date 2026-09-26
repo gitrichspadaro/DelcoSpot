@@ -378,7 +378,10 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
 .result-count { font-size: 0.9rem; color: var(--ink-soft); margin-top: 0.85rem; }
 
 /* ============ Dispatch table ============ */
-.table-wrap { overflow-x: auto; overflow-y: visible; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-soft); }
+/* No overflow on the wrapper: any overflow value other than visible turns it
+   into a scroll container, and the sticky header would then stick inside this
+   box (pushed 4.25rem down from its top) instead of to the page. */
+.table-wrap { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-soft); }
 .dispatch-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 720px; }
 .dispatch-table th, .dispatch-table td {
   text-align: left; padding: 0.85rem 1rem; vertical-align: top;
@@ -386,6 +389,16 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
 }
 .dispatch-table th:last-child, .dispatch-table td:last-child { border-right: none; }
 .dispatch-table thead th { background: var(--paper); font-size: 0.85rem; position: sticky; top: 4.25rem; z-index: 5; }
+.dispatch-table thead th:first-child { border-top-left-radius: 15px; }
+.dispatch-table thead th:last-child { border-top-right-radius: 15px; }
+.dispatch-table tbody tr:last-child td { border-bottom: none; }
+/* Narrow screens: the table is wider than the screen, so the wrapper has to
+   scroll sideways. That makes it a scroll container, so turn off the sticky
+   header there rather than have it misplace itself. */
+@media (max-width: 800px) {
+  .table-wrap { overflow-x: auto; }
+  .dispatch-table thead th { position: static; }
+}
 .dispatch-table th button {
   background: none; border: none; padding: 0; font-weight: 700; font-size: 0.85rem;
   display: inline-flex; align-items: center; gap: 0.3rem; color: var(--ink);
