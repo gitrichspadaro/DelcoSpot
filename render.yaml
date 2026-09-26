@@ -6,3 +6,17 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     healthCheckPath: /healthz
+
+  # Runs scraper.py on a schedule to keep the incidents table fresh with
+  # live data from the county dispatch feed. This is documented here for
+  # reference, but was actually created manually in the Render dashboard
+  # (New -> Cron Job) rather than via a Blueprint sync, matching how the
+  # web service and database were set up. Needs the same DATABASE_URL
+  # environment variable as delcospot-api.
+  - type: cron
+    name: delcospot-incident-scraper
+    env: python
+    plan: starter
+    schedule: "*/2 * * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scraper.py
