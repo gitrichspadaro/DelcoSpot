@@ -17,6 +17,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from models import db, User, Incident
 from auth import auth_bp
 from incidents import incidents_bp
+from sports import sports_bp
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 
@@ -90,6 +91,7 @@ def create_app():
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(incidents_bp)
+    app.register_blueprint(sports_bp)
 
     # The frontend is a single self-contained HTML file (no build step),
     # served directly from this Flask app so the site and its API share
@@ -98,7 +100,11 @@ def create_app():
 
     @app.get("/")
     def index():
-        return send_from_directory(frontend_dir, "index.html")
+        # no-cache: browsers must re-check with the server on every visit,
+        # so a new deploy shows up immediately instead of an old cached copy.
+        response = send_from_directory(frontend_dir, "index.html")
+        response.headers["Cache-Control"] = "no-cache"
+        return response
 
     @app.get("/api/status")
     def api_status():

@@ -628,6 +628,10 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
           <span><span class="resource-link-name">Delaware County Government</span><br><span class="resource-link-url">Official county government site</span></span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></svg>
         </a>
+        <a class="resource-link" href="https://www.delcolibraries.org/" target="_blank" rel="noopener">
+          <span><span class="resource-link-name">Delaware County Libraries</span><br><span class="resource-link-url">Branch hours, catalog, and library events</span></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></svg>
+        </a>
       </div>
     </div>
   </section>
@@ -816,51 +820,39 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
 
       <div class="section-head">
         <h2>News</h2>
-        <p class="muted prose-measure">County announcements and headlines from Delco newsrooms, in one running feed.</p>
-        <p class="small muted">Coming soon &mdash; headlines below are sample data while we connect real news feeds.</p>
+        <p class="muted prose-measure">Delco headlines live at each outlet's own site. We link out rather than reprint their stories.</p>
       </div>
 
-      <ul class="visually-hidden">
-        <li>Eagles 27, Cowboys 20, Final</li>
-        <li>Phillies 6, Mets 3, Final</li>
-        <li>76ers 112, Celtics 108, Final</li>
-        <li>Flyers 4, Rangers 2, Final</li>
-        <li>Radnor 21, Haverford 14, Final, football</li>
-        <li>Strath Haven 2, Springfield 1, Final, soccer</li>
-        <li>Garnet Valley 3, Ridley 1, Final, volleyball</li>
-        <li>Chester 35, Academy Park 10, Final, football</li>
-      </ul>
-      <div class="chyron" aria-hidden="true">
-        <span class="chyron-tag">Sports</span>
+      <ul class="visually-hidden" id="chyron-a11y-list"></ul>
+      <div class="chyron" aria-hidden="true" id="chyron" hidden>
+        <span class="chyron-tag">Scores</span>
         <div class="chyron-viewport">
-          <div class="chyron-track">
-            <span class="chyron-item">🏈 Eagles 27, Cowboys 20 (Final)</span>
-            <span class="chyron-item">⚾ Phillies 6, Mets 3 (Final)</span>
-            <span class="chyron-item">🏀 76ers 112, Celtics 108 (Final)</span>
-            <span class="chyron-item">🏒 Flyers 4, Rangers 2 (Final)</span>
-            <span class="chyron-item">🏈 Radnor 21, Haverford 14 (Final, Football)</span>
-            <span class="chyron-item">⚽ Strath Haven 2, Springfield 1 (Final, Soccer)</span>
-            <span class="chyron-item">🏐 Garnet Valley 3, Ridley 1 (Final, Volleyball)</span>
-            <span class="chyron-item">🏈 Chester 35, Academy Park 10 (Final, Football)</span>
-            <span class="chyron-item">🏈 Eagles 27, Cowboys 20 (Final)</span>
-            <span class="chyron-item">⚾ Phillies 6, Mets 3 (Final)</span>
-            <span class="chyron-item">🏀 76ers 112, Celtics 108 (Final)</span>
-            <span class="chyron-item">🏒 Flyers 4, Rangers 2 (Final)</span>
-            <span class="chyron-item">🏈 Radnor 21, Haverford 14 (Final, Football)</span>
-            <span class="chyron-item">⚽ Strath Haven 2, Springfield 1 (Final, Soccer)</span>
-            <span class="chyron-item">🏐 Garnet Valley 3, Ridley 1 (Final, Volleyball)</span>
-            <span class="chyron-item">🏈 Chester 35, Academy Park 10 (Final, Football)</span>
-          </div>
+          <div class="chyron-track" id="chyron-track"></div>
         </div>
       </div>
 
-      <div class="toolbar">
-        <div class="filter-row">
-          <label class="filter"><span>Topic</span><select id="news-topic"><option value="">All topics</option></select></label>
-        </div>
-        <p class="result-count" id="news-count" role="status"></p>
+      <div class="resource-list" id="news-sources">
+        <a class="resource-link" href="https://www.delcotimes.com/" target="_blank" rel="noopener">
+          <span><span class="resource-link-name">Delaware County Daily Times</span><br><span class="resource-link-url">Countywide daily newspaper &middot; subscription required for full articles</span></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></svg>
+        </a>
+        <a class="resource-link" href="https://patch.com/pennsylvania/media" target="_blank" rel="noopener">
+          <span><span class="resource-link-name">Patch &mdash; Media, PA</span><br><span class="resource-link-url">Local news and community posts</span></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></svg>
+        </a>
+        <a class="resource-link" href="https://delco.today/" target="_blank" rel="noopener">
+          <span><span class="resource-link-name">Delco Today</span><br><span class="resource-link-url">Countywide news, business, and lifestyle</span></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></svg>
+        </a>
+        <a class="resource-link" href="https://visitdelco.com/events/" target="_blank" rel="noopener">
+          <span><span class="resource-link-name">Visit Delco &mdash; Events</span><br><span class="resource-link-url">County events calendar</span></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></svg>
+        </a>
+        <a class="resource-link" href="https://www.pa.gov/agencies/penndot/projects-near-you/district-6-projects#f-copapwpcounty=Delaware%20County" target="_blank" rel="noopener">
+          <span><span class="resource-link-name">PennDOT District 6 Projects</span><br><span class="resource-link-url">Road and construction projects filtered to Delaware County</span></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M18 13v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6"/></svg>
+        </a>
       </div>
-      <div class="list-rows" id="news-list"></div>
 
     </div>
   </section>
@@ -1695,40 +1687,49 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
   }
 
   /* ---------- News ---------- */
-  var newsArticles = [
-    { head: 'County opens new 911 dispatch center in Middletown', topic: 'Public Safety', src: 'Delaware County Daily Times', hrs: 2, lede: 'The consolidated center brings police, fire, and EMS dispatch for all 49 municipalities under one roof for the first time.' },
-    { head: 'Baltimore Pike resurfacing begins Monday between Media and Springfield', topic: 'Transportation', src: 'PennDOT District 6', hrs: 5, lede: 'Expect single-lane closures overnight through mid-November. Detours are posted at each intersection.' },
-    { head: 'Upper Darby budget adds six firefighters, holds tax rate flat', topic: 'Government', src: 'Delco Today', hrs: 9, lede: 'Council approved the spending plan 8-3 after two hours of public comment.' },
-    { head: 'Chester waterfront redevelopment clears final zoning hurdle', topic: 'Development', src: 'Delaware County Daily Times', hrs: 20, lede: 'The mixed-use plan includes 240 residential units and a public riverfront walk.' },
-    { head: 'Free flu shot clinics scheduled across the county this month', topic: 'Health', src: 'Delco Health Department', hrs: 28, lede: 'Eleven sites will offer walk-in vaccinations, no insurance required.' },
-    { head: 'Ridley students sweep regional robotics competition', topic: 'Education', src: 'Delco Today', hrs: 40, lede: 'The team advances to the state finals in Harrisburg next month.' },
-    { head: 'Radnor tops Haverford in rivalry football clash, 21-14', topic: 'Sports', src: 'Delco Today', hrs: 14, lede: 'Radnor\'s defense forced three turnovers in the second half to seal the rivalry win.' },
-    { head: 'Garnet Valley volleyball opens season with tournament title', topic: 'Sports', src: 'Delaware County Daily Times', hrs: 30, lede: 'The Jaguars won all four matches without dropping a set over the weekend.' }
-  ];
+  var LEAGUE_EMOJI = { NFL: '\uD83C\uDFC8', NBA: '\uD83C\uDFC0', NHL: '\uD83C\uDFD2', MLB: '\u26BE' };
 
-  function renderNews() {
-    var sel = document.getElementById('news-topic');
-    newsArticles.map(function (n) { return n.topic; })
-      .filter(function (v, i, a) { return a.indexOf(v) === i; }).sort()
-      .forEach(function (t) { var o = document.createElement('option'); o.textContent = t; sel.appendChild(o); });
+  function scoreLine(g) {
+    var away = g.away + (g.away_score != null ? ' ' + g.away_score : '');
+    var home = g.home + (g.home_score != null ? ' ' + g.home_score : '');
+    return (LEAGUE_EMOJI[g.league] || '') + ' ' + away + ' @ ' + home + (g.state ? ' (' + g.state + ')' : '');
+  }
 
-    function draw() {
-      var topic = sel.value;
-      var rows = newsArticles.filter(function (n) { return !topic || n.topic === topic; });
-      document.getElementById('news-count').textContent = rows.length + ' of ' + newsArticles.length + ' stories shown.';
-      document.getElementById('news-list').innerHTML = rows.map(function (n) {
-        return '<article class="list-row">' +
-          '<div><h3 class="font-serif">' + escapeHtml(n.head) + '</h3>' +
-          '<p class="news-lede">' + escapeHtml(n.lede) + '</p>' +
-          '<p class="news-source" style="margin-top:0.5rem;">' + escapeHtml(n.src) + ' &middot; ' + relativeTime(Date.now() - n.hrs * 3600000) + '</p></div>' +
-          '<div class="list-side"><span class="pill pill-cleared">' + escapeHtml(n.topic) + '</span>' +
-          '<button class="btn btn-outline btn-sm" data-demo-link="the full story at ' + escapeHtml(n.src) + '">Read story</button></div>' +
-          '</article>';
-      }).join('');
+  function renderScoresTicker(games) {
+    var chyron = document.getElementById('chyron');
+    var track = document.getElementById('chyron-track');
+    var a11yList = document.getElementById('chyron-a11y-list');
+    if (!chyron || !track || !a11yList) return;
+
+    if (!games.length) {
+      chyron.hidden = true;
+      a11yList.innerHTML = '';
+      return;
     }
 
-    sel.addEventListener('change', draw);
-    draw();
+    a11yList.innerHTML = games.map(function (g) {
+      return '<li>' + escapeHtml(g.league + ' ' + g.away + ' ' + (g.away_score != null ? g.away_score : '') +
+        ', ' + g.home + ' ' + (g.home_score != null ? g.home_score : '') + ', ' + g.state) + '</li>';
+    }).join('');
+
+    // The scrolling animation shifts the track by exactly -50%, so its
+    // content has to be duplicated once for the loop to appear seamless.
+    var itemsHtml = games.map(function (g) {
+      return '<span class="chyron-item">' + escapeHtml(scoreLine(g)) + '</span>';
+    }).join('');
+    track.innerHTML = itemsHtml + itemsHtml;
+    chyron.hidden = false;
+  }
+
+  function loadScores() {
+    fetch('/api/scores', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { renderScoresTicker(data.games || []); })
+      .catch(function () { renderScoresTicker([]); });
+  }
+
+  function renderNews() {
+    loadScores();
   }
 
   /* ---------- Boot ---------- */
