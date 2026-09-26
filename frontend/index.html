@@ -1725,10 +1725,10 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     // distance (-50% of the doubled track) in the same time. Pin the
     // speed instead (a slow, readable crawl) and derive the duration
     // from the track's actual rendered width.
-    var CRAWL_PX_PER_SECOND = 20;
+    var CRAWL_PX_PER_SECOND = 30;
     requestAnimationFrame(function () {
       var halfWidth = track.scrollWidth / 2;
-      var seconds = Math.max(35, halfWidth / CRAWL_PX_PER_SECOND);
+      var seconds = Math.max(23, halfWidth / CRAWL_PX_PER_SECOND);
       track.style.setProperty('--chyron-duration', seconds + 's');
     });
   }
