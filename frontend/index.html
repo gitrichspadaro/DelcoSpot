@@ -189,6 +189,10 @@ main { display: block; }
 .pill-low { background: var(--moss-tint); color: var(--moss); border-color: color-mix(in srgb, var(--moss) 35%, transparent); }
 .pill-active { background: var(--sky-tint); color: var(--sky); }
 .pill-cleared { background: var(--paper); color: var(--ink-soft); border-color: var(--border); }
+.pill-fire { background: var(--brick-tint); color: var(--brick); border-color: color-mix(in srgb, var(--brick) 35%, transparent); }
+.pill-ems { background: var(--amber-tint); color: var(--amber-dark); border-color: color-mix(in srgb, var(--amber) 35%, transparent); }
+.pill-police { background: color-mix(in srgb, var(--slate) 12%, var(--surface)); color: var(--slate); border-color: color-mix(in srgb, var(--slate) 35%, transparent); }
+.pill-other { background: var(--paper); color: var(--ink-soft); border-color: var(--border); }
 
 /* ============ Header & Nav ============ */
 .site-header { background: var(--slate-900); position: sticky; top: 0; z-index: 40; border-radius: 0 0 20px 20px; box-shadow: var(--shadow-soft); }
@@ -643,7 +647,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
           <label class="filter"><span>Search address or incident</span><input type="search" id="f-search" placeholder="e.g. Chester Pike"></label>
           <label class="filter"><span>Municipality</span><select id="f-town"><option value="">All municipalities</option></select></label>
           <label class="filter"><span>Incident type</span><select id="f-type"><option value="">All types</option></select></label>
-          <label class="filter"><span>Priority</span><select id="f-priority"><option value="">All priorities</option><option>High</option><option>Medium</option><option>Low</option></select></label>
+          <label class="filter"><span>Service</span><select id="f-service"><option value="">All services</option><option>Fire</option><option>EMS</option><option>Police</option><option>Other</option></select></label>
           <label class="filter"><span>Status</span><select id="f-status"><option value="">All statuses</option><option>Active</option><option>Cleared</option></select></label>
           <button class="btn btn-outline btn-sm" id="f-reset">Clear filters</button>
         </div>
@@ -654,7 +658,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
           <label class="chip"><input type="checkbox" data-col="location" checked> Location</label>
           <label class="chip"><input type="checkbox" data-col="town" checked> Municipality</label>
           <label class="chip"><input type="checkbox" data-col="unit" checked> Units</label>
-          <label class="chip"><input type="checkbox" data-col="priority" checked> Priority</label>
+          <label class="chip"><input type="checkbox" data-col="service" checked> Service</label>
           <label class="chip"><input type="checkbox" data-col="status" checked> Status</label>
         </fieldset>
         <p class="result-count" id="dispatch-count" role="status"></p>
@@ -671,7 +675,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
               <th scope="col" data-col="location"><button data-sort="location">Location <span class="sort-arrow" aria-hidden="true"></span></button></th>
               <th scope="col" data-col="town"><button data-sort="town">Municipality <span class="sort-arrow" aria-hidden="true"></span></button></th>
               <th scope="col" data-col="unit"><button data-sort="unit">Units <span class="sort-arrow" aria-hidden="true"></span></button></th>
-              <th scope="col" data-col="priority"><button data-sort="priority">Priority <span class="sort-arrow" aria-hidden="true"></span></button></th>
+              <th scope="col" data-col="service"><button data-sort="service">Service <span class="sort-arrow" aria-hidden="true"></span></button></th>
               <th scope="col" data-col="status"><button data-sort="status">Status <span class="sort-arrow" aria-hidden="true"></span></button></th>
             </tr>
           </thead>
@@ -1242,7 +1246,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
       id: raw.incident_number || ('DC-' + raw.id),
       ts: Date.parse(occurredIso),
       type: raw.incident_type || 'Unknown incident',
-      priority: raw.priority || 'Unknown',
+      service: raw.service || 'Other',
       location: raw.location || 'Location unavailable',
       town: raw.town || 'Unknown',
       unit: raw.unit || 'Unassigned',
@@ -1313,7 +1317,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     var q = document.getElementById('f-search').value.trim().toLowerCase();
     var town = document.getElementById('f-town').value;
     var type = document.getElementById('f-type').value;
-    var pr = document.getElementById('f-priority').value;
+    var svc = document.getElementById('f-service').value;
     var st = document.getElementById('f-status').value;
     // The server already restricts anonymous requests to the last 24 hours
     // (see /api/incidents), so dispatchIncidents only ever contains what
@@ -1323,7 +1327,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     dispatchView = dispatchIncidents.filter(function (inc) {
       if (town && inc.town !== town) return false;
       if (type && inc.type !== type) return false;
-      if (pr && inc.priority !== pr) return false;
+      if (svc && inc.service !== svc) return false;
       if (st && inc.status !== st) return false;
       if (q && (inc.location + ' ' + inc.type + ' ' + inc.town + ' ' + inc.id).toLowerCase().indexOf(q) === -1) return false;
       return true;
@@ -1341,11 +1345,9 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
 
   function sortDispatchView() {
     var key = dispatchSort.key, dir = dispatchSort.dir === 'asc' ? 1 : -1;
-    var prOrder = { High: 3, Medium: 2, Low: 1 };
     dispatchView.sort(function (a, b) {
       var av, bv;
       if (key === 'time') { av = a.ts; bv = b.ts; }
-      else if (key === 'priority') { av = prOrder[a.priority]; bv = prOrder[b.priority]; }
       else { av = String(a[key]).toLowerCase(); bv = String(b[key]).toLowerCase(); }
       if (av < bv) return -1 * dir;
       if (av > bv) return 1 * dir;
@@ -1353,8 +1355,9 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     });
   }
 
-  function priorityPill(p) {
-    return '<span class="pill pill-' + p.toLowerCase() + '">' + p + '</span>';
+  function servicePill(s) {
+    var cls = { Fire: 'fire', EMS: 'ems', Police: 'police' }[s] || 'other';
+    return '<span class="pill pill-' + cls + '">' + escapeHtml(s) + '</span>';
   }
   function statusPill(s) {
     return '<span class="pill pill-' + (s === 'Active' ? 'active' : 'cleared') + '">' + s + '</span>';
@@ -1377,7 +1380,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
         '<td data-col="location">' + escapeHtml(inc.location) + '</td>' +
         '<td data-col="town">' + escapeHtml(inc.town) + '</td>' +
         '<td data-col="unit">' + escapeHtml(inc.unit) + '</td>' +
-        '<td data-col="priority">' + priorityPill(inc.priority) + '</td>' +
+        '<td data-col="service">' + servicePill(inc.service) + '</td>' +
         '<td data-col="status">' + statusPill(inc.status) + '</td>' +
         '</tr>';
       if (open) {
@@ -1406,12 +1409,12 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
   function renderDispatch() {
     loadDispatch();
 
-    ['f-search', 'f-town', 'f-type', 'f-priority', 'f-status'].forEach(function (id) {
+    ['f-search', 'f-town', 'f-type', 'f-service', 'f-status'].forEach(function (id) {
       var el = document.getElementById(id);
       el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', applyDispatchFilters);
     });
     document.getElementById('f-reset').addEventListener('click', function () {
-      ['f-search', 'f-town', 'f-type', 'f-priority', 'f-status'].forEach(function (id) { document.getElementById(id).value = ''; });
+      ['f-search', 'f-town', 'f-type', 'f-service', 'f-status'].forEach(function (id) { document.getElementById(id).value = ''; });
       applyDispatchFilters();
       toast('Filters cleared.');
     });

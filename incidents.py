@@ -14,6 +14,7 @@ could bypass by opening dev tools). Here, the check happens in the query
 itself, so there's no way for a client to see more than it's allowed to
 just by editing the page.
 """
+import re
 from datetime import datetime, timedelta, timezone
 
 from flask import Blueprint, jsonify, request
@@ -26,12 +27,51 @@ incidents_bp = Blueprint("incidents", __name__, url_prefix="/api")
 ANONYMOUS_WINDOW_HOURS = 24
 
 
+# The county feed has no priority or severity field, so instead of guessing
+# one we show which service responded (Fire / EMS / Police). That comes from
+# the county's own call type, falling back to the kind of units dispatched.
+EMS_TYPE_WORDS = ("EMS", "ALS", "BLS", "MEDICAL", "AMBULANCE", "CARDIAC", "OVERDOSE")
+FIRE_TYPE_WORDS = ("FIRE", "ALARM", "SMOKE", "GAS", "HAZMAT", "HAZ MAT", "RESCUE",
+                   "WIRES", "WIRE", "EXPLOSION", "CO", "CARBON MONOXIDE", "ODOR",
+                   "ELEVATOR", "FD")
+POLICE_TYPE_WORDS = ("POLICE", "PD")
+EMS_UNIT_WORDS = ("MEDIC", "AMBULANCE", "MICU", "EMS", "BLS", "ALS")
+FIRE_UNIT_WORDS = ("COMPANY", "ENGINE", "LADDER", "TRUCK", "SQUAD", "RESCUE", "TOWER",
+                   "CHIEF", "FIRE", "TANKER", "BRUSH", "QUINT")
+
+
+def _has_word(text, words):
+    """True if any of `words` appears in `text` as a whole word, so "ALS"
+    matches "ALS-EMS FALL" but not "FALSE ALARM"."""
+    return any(re.search(r"\b" + re.escape(word) + r"\b", text) for word in words)
+
+
+def classify_service(incident_type, unit):
+    call = (incident_type or "").upper().replace("-", " ")
+    # "ALS-EMS ...", "BLS-EMS ..." -- the county's own EMS call codes.
+    if _has_word(call, EMS_TYPE_WORDS):
+        return "EMS"
+    # Checked before police: "ASSIST FD TO ASSIST POLICE" is a fire
+    # department call (the fire company is what gets sent).
+    if _has_word(call, FIRE_TYPE_WORDS):
+        return "Fire"
+    if _has_word(call, POLICE_TYPE_WORDS):
+        return "Police"
+
+    units = (unit or "").upper()
+    if _has_word(units, FIRE_UNIT_WORDS):
+        return "Fire"
+    if _has_word(units, EMS_UNIT_WORDS):
+        return "EMS"
+    return "Other"
+
+
 def _serialize(incident):
     return {
         "id": incident.id,
         "incident_number": incident.incident_number,
         "incident_type": incident.incident_type,
-        "priority": incident.priority,
+        "service": classify_service(incident.incident_type, incident.unit),
         "status": incident.status,
         "location": incident.location,
         "town": incident.town,
@@ -63,10 +103,6 @@ def get_incidents():
     town = request.args.get("town")
     if town:
         query = query.filter(Incident.town.ilike(town))
-
-    priority = request.args.get("priority")
-    if priority:
-        query = query.filter(Incident.priority.ilike(priority))
 
     status = request.args.get("status")
     if status:
