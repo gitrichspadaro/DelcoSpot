@@ -714,6 +714,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
       <div class="chat-layout" id="chat-layout">
         <div class="chat-box">
           <div class="chat-log" id="chat-log" role="log" aria-live="polite" aria-label="Chat messages"></div>
+          <p class="field-error" id="chat-error" hidden></p>
           <div class="chat-input-row">
             <label for="chat-input" class="visually-hidden">Write a message</label>
             <input type="text" id="chat-input" placeholder="Say something to the room" maxlength="300">
@@ -732,12 +733,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
           </div>
           <div class="card-civic">
             <h3>How moderation works</h3>
-            <p class="small muted">Messages are screened as they are sent. A flagged message is blocked immediately and the sender is disconnected. A second flag inside 24 hours issues a ban that a moderator has to lift.</p>
-            <p class="small muted" style="margin-top:0.6rem;">Try sending a message with a flagged word to see it in action.</p>
-          </div>
-          <div class="card-civic">
-            <h3>In the room</h3>
-            <p class="small muted" id="chat-online">142 members online</p>
+            <p class="small muted">Every message is screened automatically before it's posted. A blocked message never reaches the room. A second violation within 24 hours bans the account until a moderator lifts it.</p>
           </div>
         </aside>
       </div>
@@ -975,6 +971,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     $all('.nav-link[data-target]').forEach(function (a) {
       a.setAttribute('aria-current', a.dataset.target === id ? 'page' : 'false');
     });
+    setChatPolling(id === 'chat');
     var heading = $('#' + id + ' h1, #' + id + ' h2');
     if (heading) {
       heading.setAttribute('tabindex', '-1');
@@ -1466,71 +1463,101 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
   }
 
   /* ---------- Chat ---------- */
-  var BLOCKED = ['idiot', 'stupid', 'moron', 'shut up', 'trash', 'hate you', 'loser'];
-  var chatStrikes = 0;
+  // Moderation now runs server-side (see chat.py) -- nothing to duplicate here.
+  var chatMessages = [];
+  var chatSinceId = 0;
+  var chatPollTimer = null;
   var chatBanned = false;
-  var chatMessages = [
-    { who: 'Maureen K.', mins: 14, text: 'Anybody know why Baltimore Pike is shut near the courthouse? Sat there twenty minutes.' },
-    { who: 'Dave R.', mins: 12, text: 'Wires down from the storm. It is already up on Emergency Services Activity, crew is on scene.' },
-    { who: 'Maureen K.', mins: 11, text: 'Thank you. Taking Providence instead.' },
-    { who: 'Tasha B.', mins: 6, text: 'Reminder that the Media farmers market moved to Saturday mornings for the fall.' },
-    { who: 'Bill C.', mins: 3, text: 'Anyone have a plumber they actually like in Ridley? Ours retired.' }
-  ];
 
-  function chatTime(mins) {
-    var d = new Date(Date.now() - mins * 60000);
+  function chatTime(iso) {
+    var d = new Date(iso);
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   }
 
   function renderChatLog() {
     var log = document.getElementById('chat-log');
+    if (!log) return;
+    var wasNearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 40;
     log.innerHTML = chatMessages.map(function (m) {
-      if (m.system) return '<div class="msg-system">' + escapeHtml(m.text) + '</div>';
-      return '<div><div class="msg-name">' + escapeHtml(m.who) +
-        '<span class="msg-time">' + chatTime(m.mins) + '</span></div>' +
+      return '<div><div class="msg-name">' + escapeHtml(m.author) +
+        '<span class="msg-time">' + chatTime(m.created_at) + '</span></div>' +
         '<div class="msg-body">' + escapeHtml(m.text) + '</div></div>';
     }).join('');
-    log.scrollTop = log.scrollHeight;
+    if (wasNearBottom) log.scrollTop = log.scrollHeight;
+  }
+
+  function setChatError(message) {
+    var el = document.getElementById('chat-error');
+    if (!el) return;
+    if (message) { el.textContent = message; el.hidden = false; }
+    else { el.hidden = true; }
+  }
+
+  function lockChatInput() {
+    var input = document.getElementById('chat-input');
+    var send = document.getElementById('chat-send');
+    if (input) input.disabled = true;
+    if (send) send.disabled = true;
+  }
+
+  function pollChatMessages() {
+    if (!hasFullAccess()) return;
+    fetch('/api/chat/messages?since_id=' + chatSinceId, { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.banned) { chatBanned = true; lockChatInput(); }
+        if (data.messages && data.messages.length) {
+          chatMessages = chatMessages.concat(data.messages);
+          chatSinceId = data.messages[data.messages.length - 1].id;
+          renderChatLog();
+        }
+      })
+      .catch(function () { /* transient network hiccup -- next poll retries */ });
+  }
+
+  function loadChatHistory() {
+    fetch('/api/chat/messages', { credentials: 'include' })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        chatMessages = data.messages || [];
+        chatSinceId = chatMessages.length ? chatMessages[chatMessages.length - 1].id : 0;
+        chatBanned = !!data.banned;
+        if (chatBanned) lockChatInput();
+        renderChatLog();
+      })
+      .catch(function () {
+        var log = document.getElementById('chat-log');
+        if (log) log.innerHTML = '<div class="msg-system">Could not load chat history. Check your connection and try refreshing.</div>';
+      });
   }
 
   function sendChatMessage() {
     var input = document.getElementById('chat-input');
     var text = input.value.trim();
-    if (!text) return;
-    if (chatBanned) { toast('You are banned from this room.'); return; }
+    if (!text || chatBanned) return;
 
-    var lower = text.toLowerCase();
-    var hit = BLOCKED.some(function (w) { return lower.indexOf(w) !== -1; });
-    if (hit) {
-      chatStrikes++;
-      input.value = '';
-      if (chatStrikes >= 2) {
-        chatBanned = true;
-        chatMessages.push({ system: true, mins: 0, text: 'Second violation. You have been banned from this room. Contact a moderator to appeal.' });
-        document.getElementById('chat-input').disabled = true;
-        document.getElementById('chat-send').disabled = true;
-      } else {
-        chatMessages.push({ system: true, mins: 0, text: 'Message blocked for abusive language and you have been disconnected. Rejoin to continue. One more violation results in a ban.' });
+    setChatError(null);
+    input.disabled = true;
+
+    apiPost('/api/chat/messages', { text: text }).then(function (res) {
+      input.disabled = false;
+      if (!res.ok) {
+        setChatError(firstErrorMessage(res.data, 'Message could not be sent.'));
+        if (res.data && res.data.banned) { chatBanned = true; lockChatInput(); }
+        return;
       }
+      input.value = '';
+      input.focus();
+      chatMessages.push(res.data);
+      chatSinceId = res.data.id;
       renderChatLog();
-      return;
-    }
-
-    chatMessages.push({ who: state.loggedIn ? state.name : 'You', mins: 0, text: text });
-    input.value = '';
-    renderChatLog();
-
-    setTimeout(function () {
-      var replies = [
-        'Good question, I was wondering the same.',
-        'Saw that too on my way through town.',
-        'Posting the link in a minute.',
-        'Yep, can confirm.'
-      ];
-      chatMessages.push({ who: 'Dave R.', mins: 0, text: replies[Math.floor(Math.random() * replies.length)] });
-      renderChatLog();
-    }, 1400);
+    }).catch(function () {
+      input.disabled = false;
+      setChatError('Message could not be sent. Check your connection.');
+    });
   }
+
+  var CHAT_POLL_MS = 4000;
 
   function applyChatAccess() {
     var locked = !hasFullAccess();
@@ -1539,10 +1566,24 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     if (!gate || !layout) return;
     gate.hidden = !locked;
     layout.hidden = locked;
+    if (locked) {
+      setChatPolling(false);
+    } else if (document.getElementById('chat') && !document.getElementById('chat').hidden) {
+      setChatPolling(true);
+    }
+  }
+
+  // Polling only runs while the chat page is actually visible and the
+  // viewer has full access, so signed-out visitors and other pages never
+  // trigger a background request loop.
+  function setChatPolling(on) {
+    if (chatPollTimer) { clearInterval(chatPollTimer); chatPollTimer = null; }
+    if (!on || !hasFullAccess()) return;
+    if (!chatMessages.length && !chatSinceId) loadChatHistory();
+    chatPollTimer = setInterval(pollChatMessages, CHAT_POLL_MS);
   }
 
   function renderChat() {
-    renderChatLog();
     document.getElementById('chat-send').addEventListener('click', sendChatMessage);
     document.getElementById('chat-input').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') sendChatMessage();
@@ -1755,6 +1796,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     checkSession().then(function () {
       renderAuthUI();
       renderDispatch(); // fetches real incident data and updates the home ticker once loaded
+      applyChatAccess(); // re-check now that an existing session (e.g. a page reload) is known
     });
     renderChat();
     renderNightlife();

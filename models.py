@@ -22,8 +22,30 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
+    # Chat moderation state. `chat_last_strike_at` lets the second-strike
+    # check look back only 24 hours, matching the room rules shown to
+    # users ("a second flag inside 24 hours issues a ban").
+    chat_strikes = db.Column(db.Integer, nullable=False, default=0)
+    chat_last_strike_at = db.Column(db.DateTime, nullable=True)
+    chat_banned = db.Column(db.Boolean, nullable=False, default=False)
+
     def __repr__(self):
         return f"<User {self.email}>"
+
+
+class ChatMessage(db.Model):
+    __tablename__ = "chat_messages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    # Snapshot the name at post time so a later name change doesn't rewrite
+    # history, and so the room still works even if the user record changes.
+    author_name = db.Column(db.String(120), nullable=False)
+    text = db.Column(db.String(300), nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+
+    def __repr__(self):
+        return f"<ChatMessage {self.id} by user {self.user_id}>"
 
 
 class Incident(db.Model):
