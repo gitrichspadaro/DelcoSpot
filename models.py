@@ -7,12 +7,13 @@ backend (chat messages, listings, jobs, etc.).
 """
 from datetime import datetime, timezone
 
+from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
 
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)

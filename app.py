@@ -16,6 +16,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 
 from models import db, User, Incident
 from auth import auth_bp
+from incidents import incidents_bp
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 
@@ -88,6 +89,7 @@ def create_app():
         db.create_all()
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(incidents_bp)
 
     @app.get("/")
     def index():

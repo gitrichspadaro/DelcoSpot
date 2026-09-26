@@ -7,7 +7,8 @@ more get added (login, logout, password reset, etc.).
 import re
 
 from flask import Blueprint, request, jsonify
-from werkzeug.security import generate_password_hash
+from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import db, User
 
@@ -57,3 +58,37 @@ def signup():
         "name": user.name,
         "email": user.email,
     }), 201
+
+
+@auth_bp.post("/login")
+def login():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    user = User.query.filter_by(email=email).first()
+
+    # Deliberately generic error either way, so a failed login doesn't
+    # reveal whether that email even has an account.
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({"errors": {"login": "Incorrect email or password."}}), 401
+
+    login_user(user)
+    return jsonify({"id": user.id, "name": user.name, "email": user.email}), 200
+
+
+@auth_bp.post("/logout")
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"message": "Logged out."}), 200
+
+
+@auth_bp.get("/me")
+@login_required
+def me():
+    return jsonify({
+        "id": current_user.id,
+        "name": current_user.name,
+        "email": current_user.email,
+    }), 200
