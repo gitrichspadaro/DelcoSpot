@@ -468,7 +468,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
   display: flex; align-items: center; padding: 0 1.1rem; flex-shrink: 0; text-transform: uppercase;
 }
 .chyron-viewport { overflow: hidden; flex: 1; position: relative; }
-.chyron-track { display: inline-flex; white-space: nowrap; padding: 0.8rem 0; animation: chyron-scroll 34s linear infinite; }
+.chyron-track { display: inline-flex; white-space: nowrap; padding: 0.8rem 0; animation: chyron-scroll 34s linear infinite; animation-duration: var(--chyron-duration, 60s); }
 .chyron-item { color: #fff; font-size: 0.9rem; margin-right: 2.75rem; flex-shrink: 0; }
 @keyframes chyron-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .chyron:hover .chyron-track { animation-play-state: paused; }
@@ -1719,6 +1719,18 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     }).join('');
     track.innerHTML = itemsHtml + itemsHtml;
     chyron.hidden = false;
+
+    // Crawl speed, not a fixed duration: a fixed duration makes a short
+    // list race by and a long one crawl, since both travel the same
+    // distance (-50% of the doubled track) in the same time. Pin the
+    // speed instead (a slow, readable crawl) and derive the duration
+    // from the track's actual rendered width.
+    var CRAWL_PX_PER_SECOND = 45;
+    requestAnimationFrame(function () {
+      var halfWidth = track.scrollWidth / 2;
+      var seconds = Math.max(20, halfWidth / CRAWL_PX_PER_SECOND);
+      track.style.setProperty('--chyron-duration', seconds + 's');
+    });
   }
 
   function loadScores() {
