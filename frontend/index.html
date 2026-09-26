@@ -371,6 +371,11 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
   border-radius: 16px; padding: 1.1rem 1.25rem; margin-bottom: 1.25rem;
   display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;
 }
+/* The .gate rule above sets its own display, which otherwise always beats
+   the browser's built-in "[hidden] { display: none }" rule (author CSS
+   wins over the browser default even at equal specificity). Without this,
+   setting el.hidden = true in JS never actually hides a .gate element. */
+.gate[hidden] { display: none; }
 .gate strong { display: block; }
 .gate p { color: var(--ink-soft); font-size: 0.9rem; margin-top: 0.2rem; max-width: 62ch; }
 
