@@ -11,6 +11,9 @@ if the ticker ever goes empty, that's the first thing to check.
 
 Results are cached in memory for CACHE_SECONDS so a page full of
 visitors doesn't trigger a fresh outbound request per visitor.
+
+Only the Philadelphia teams (Eagles, 76ers, Phillies, Flyers) are kept --
+this is a Delco-focused site, not a general sports ticker.
 """
 import time
 
@@ -32,6 +35,18 @@ LEAGUES = [
 
 _cache = {"at": 0, "games": []}
 
+# Philly teams only. Matched on both ESPN's abbreviation and the team's
+# location name, so a mismatch in one (e.g. an ESPN abbreviation change)
+# doesn't silently drop a team.
+PHILLY_ABBREVIATIONS = {"PHI"}
+PHILLY_LOCATIONS = {"Philadelphia"}
+
+
+def _is_philly(team):
+    abbr = (team.get("abbreviation") or "").upper()
+    location = team.get("location") or ""
+    return abbr in PHILLY_ABBREVIATIONS or location in PHILLY_LOCATIONS
+
 
 def _fetch_league(label, sport, league):
     url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard"
@@ -49,6 +64,8 @@ def _fetch_league(label, sport, league):
             competitors = competition["competitors"]
             home = next(c for c in competitors if c.get("homeAway") == "home")
             away = next(c for c in competitors if c.get("homeAway") == "away")
+            if not (_is_philly(home["team"]) or _is_philly(away["team"])):
+                continue
             status = event.get("status", {}).get("type", {})
             games.append({
                 "league": label,
