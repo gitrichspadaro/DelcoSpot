@@ -8,7 +8,7 @@ Checklist items get built out.
 """
 import os
 import secrets
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_login import LoginManager
 
 import sentry_sdk
@@ -91,8 +91,17 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(incidents_bp)
 
+    # The frontend is a single self-contained HTML file (no build step),
+    # served directly from this Flask app so the site and its API share
+    # one origin -- no CORS setup needed, and the session cookie just works.
+    frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend")
+
     @app.get("/")
     def index():
+        return send_from_directory(frontend_dir, "index.html")
+
+    @app.get("/api/status")
+    def api_status():
         return jsonify({
             "service": "DelcoSpot API",
             "status": "ok",

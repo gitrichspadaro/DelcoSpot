@@ -29,6 +29,7 @@ ANONYMOUS_WINDOW_HOURS = 24
 def _serialize(incident):
     return {
         "id": incident.id,
+        "incident_number": incident.incident_number,
         "incident_type": incident.incident_type,
         "priority": incident.priority,
         "status": incident.status,
@@ -38,7 +39,10 @@ def _serialize(incident):
         "narrative": incident.narrative,
         "latitude": incident.latitude,
         "longitude": incident.longitude,
-        "occurred_at": incident.occurred_at.isoformat(),
+        # occurred_at is stored as a naive UTC datetime (see scraper.py), so
+        # isoformat() alone would omit the timezone and let a browser
+        # misread it as local time. Appending "Z" makes the UTC explicit.
+        "occurred_at": incident.occurred_at.isoformat() + "Z",
     }
 
 
