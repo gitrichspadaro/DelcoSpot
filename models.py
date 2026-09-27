@@ -52,6 +52,29 @@ class ChatMessage(db.Model):
         return f"<ChatMessage {self.id} by user {self.user_id}>"
 
 
+class Venue(db.Model):
+    __tablename__ = "venues"
+
+    # Real venue directory, manually curated (matching the chat_admin.py
+    # pattern) rather than pulled from an API: no free API covers small
+    # local bars/clubs with any real accuracy, and Google Places would
+    # need a billed API key. Add/edit/remove venues via venue_admin.py on
+    # the Render Web Shell.
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    town = db.Column(db.String(120), nullable=False)
+    category = db.Column(db.String(60), nullable=True)     # e.g. "Bar", "Brewery", "Club"
+    blurb = db.Column(db.String(400), nullable=True)
+    website_url = db.Column(db.String(500), nullable=True)
+    instagram_url = db.Column(db.String(500), nullable=True)
+    # Controls whether it shows on the site without deleting the row.
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f"<Venue {self.name} ({self.town})>"
+
+
 class Incident(db.Model):
     __tablename__ = "incidents"
 

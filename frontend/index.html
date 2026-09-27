@@ -455,11 +455,8 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
 .card-flyer { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 1.35rem; display: flex; flex-direction: column; gap: 0.6rem; box-shadow: var(--shadow-soft); }
 .card-flyer h3 { font-size: 1.15rem; }
 .venue-town { color: var(--ink-soft); font-size: 0.875rem; }
-.venue-award { background: var(--amber-tint); color: var(--amber-dark); border-radius: 10px; padding: 0.45rem 0.6rem; font-size: 0.85rem; font-weight: 600; }
+.venue-category { color: var(--ink-soft); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
 .venue-social { display: flex; gap: 0.6rem; margin-top: auto; padding-top: 0.6rem; flex-wrap: wrap; }
-.social-feed { display: flex; flex-direction: column; gap: 0.9rem; }
-.social-post { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.15rem; box-shadow: var(--shadow-soft); }
-.social-handle { font-weight: 700; font-size: 0.9rem; }
 
 /* ============ Sports chyron (News) ============ */
 .chyron { display: flex; align-items: stretch; background: var(--slate-900); border-radius: 12px; overflow: hidden; margin-bottom: 1.75rem; }
@@ -746,22 +743,16 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     <div class="nightlife-band">
       <div class="container">
         <h1>Nightlife</h1>
-        <p class="lede" style="margin-top:0.8rem;">Corner taprooms, cover bands, and the places that have been pouring since before you were born. Updated as venues post.</p>
-        <p class="small" style="margin-top:0.8rem; opacity:0.85;">Coming soon &mdash; the venues below are sample listings while we build out real venue data.</p>
+        <p class="lede" style="margin-top:0.8rem;">Corner taprooms, cover bands, and the places that have been pouring since before you were born.</p>
       </div>
     </div>
     <div class="container">
       <div class="section-head">
-        <h2>Tonight around the county</h2>
-        <p class="muted">Tap a venue to visit its own site or socials.</p>
+        <h2>Around the county</h2>
+        <p class="muted">Tap a venue to visit its own site or Instagram for tonight's specials and events.</p>
       </div>
       <div class="venue-grid" id="venue-grid"></div>
-
-      <div class="section-head" style="margin-top:3rem;">
-        <h2>Latest from venue socials</h2>
-        <p class="muted">Posts pulled from the accounts of participating bars and clubs.</p>
-      </div>
-      <div class="social-feed" id="social-feed"></div>
+      <p class="small muted" id="venue-empty" hidden>No venues listed yet.</p>
     </div>
 
   </section>
@@ -1618,41 +1609,39 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
   }
 
   /* ---------- Nightlife ---------- */
-  var nightlifeVenues = [
-    { name: 'The Bootleg Room', town: 'Media', blurb: 'Live cover bands Thursday through Saturday, kitchen open until midnight.', tonight: 'Tonight: The Blue Route, 9pm, no cover', award: 'Best Live Music, Delco County Weekly 2025' },
-    { name: 'Kelly\u2019s Corner Tap', town: 'Upper Darby', blurb: 'Neighborhood bar since 1958. Cash-friendly, jukebox loud.', tonight: 'Tonight: $3 lagers until 8pm', award: null },
-    { name: 'Ridge Ave Brewing', town: 'Aston', blurb: 'Taproom with rotating local pours and a food truck in the lot.', tonight: 'Tonight: Trivia, 7:30pm', award: 'Gold, PA Brewers Cup 2026' },
-    { name: 'The Anchorage', town: 'Chester', blurb: 'Riverfront patio, crab fries, and a view of the Commodore Barry.', tonight: 'Tonight: DJ on the deck, 10pm', award: null },
-    { name: 'Villa Nova Social Club', town: 'Radnor', blurb: 'Late kitchen, long bar, and the county\u2019s deepest amaro list.', tonight: 'Tonight: Happy hour extended to 8pm', award: 'Cited for Excellence, Delco Restaurant Assoc.' },
-    { name: 'Cross Keys Pub', town: 'Springfield', blurb: 'Darts, wings, and every Eagles game on every screen.', tonight: 'Tonight: Wing night, 50 cents each', award: null }
-  ];
-  var socialPosts = [
-    { handle: '@bootlegroom', mins: 42, text: 'Doors at 8 tonight. Blue Route is bringing the horn section this time. Get here early for a booth.' },
-    { handle: '@ridgeavebrew', mins: 96, text: 'Fresh keg of the Concord Pale just tapped. Trivia starts 7:30, teams of six max.' },
-    { handle: '@anchoragechester', mins: 180, text: 'Patio is open, river breeze is doing the work for us today. Crab fries half off until 6.' },
-    { handle: '@crosskeyspub', mins: 300, text: 'Sunday reminder: we open at 11 for the early game. Bring the whole section.' }
-  ];
+  function renderVenueCard(v) {
+    var links = '';
+    if (v.website_url) {
+      links += '<a class="btn btn-outline btn-sm" href="' + escapeHtml(v.website_url) + '" target="_blank" rel="noopener noreferrer">Visit website</a>';
+    }
+    if (v.instagram_url) {
+      links += '<a class="btn btn-ghost btn-sm" href="' + escapeHtml(v.instagram_url) + '" target="_blank" rel="noopener noreferrer">Instagram</a>';
+    }
+    return '<article class="card-flyer">' +
+      '<h3>' + escapeHtml(v.name) + '</h3>' +
+      '<p class="venue-town">' + escapeHtml(v.town) + (v.category ? ' &middot; <span class="venue-category">' + escapeHtml(v.category) + '</span>' : '') + '</p>' +
+      (v.blurb ? '<p class="small">' + escapeHtml(v.blurb) + '</p>' : '') +
+      (links ? '<div class="venue-social">' + links + '</div>' : '') +
+      '</article>';
+  }
 
   function renderNightlife() {
-    document.getElementById('venue-grid').innerHTML = nightlifeVenues.map(function (v) {
-      return '<article class="card-flyer">' +
-        '<h3>' + escapeHtml(v.name) + '</h3>' +
-        '<p class="venue-town">' + escapeHtml(v.town) + '</p>' +
-        '<p class="small">' + escapeHtml(v.blurb) + '</p>' +
-        '<p class="small" style="font-weight:600;">' + escapeHtml(v.tonight) + '</p>' +
-        (v.award ? '<p class="venue-award">' + escapeHtml(v.award) + '</p>' : '') +
-        '<div class="venue-social">' +
-        '<button class="btn btn-outline btn-sm" data-demo-link="the website for ' + escapeHtml(v.name) + '">Visit website</button>' +
-        '<button class="btn btn-ghost btn-sm" data-demo-link="the Instagram page for ' + escapeHtml(v.name) + '">Instagram</button>' +
-        '</div></article>';
-    }).join('');
-
-    document.getElementById('social-feed').innerHTML = socialPosts.map(function (p) {
-      return '<article class="social-post">' +
-        '<div class="social-handle">' + escapeHtml(p.handle) +
-        '<span class="msg-time">' + relativeTime(Date.now() - p.mins * 60000) + '</span></div>' +
-        '<p class="small" style="margin-top:0.35rem;">' + escapeHtml(p.text) + '</p></article>';
-    }).join('');
+    var grid = document.getElementById('venue-grid');
+    var empty = document.getElementById('venue-empty');
+    fetch('/api/venues')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var venues = (data && data.venues) || [];
+        grid.innerHTML = venues.map(renderVenueCard).join('');
+        if (empty) empty.hidden = venues.length > 0;
+      })
+      .catch(function () {
+        grid.innerHTML = '';
+        if (empty) {
+          empty.hidden = false;
+          empty.textContent = 'Could not load venues. Try again shortly.';
+        }
+      });
   }
 
   /* ---------- Real Estate ---------- */
