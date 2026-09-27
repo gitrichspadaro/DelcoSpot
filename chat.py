@@ -10,7 +10,7 @@ Moderation happens before a message is ever stored -- a blocked message
 never reaches the room or the database, so there's nothing to clean up
 after the fact. The rules enforced here are a first pass at what the
 room rules shown on the page promise:
-  - No slurs, harassment, or a short list of clearly abusive language.
+  - No vulgar/profane language, slurs, or harassment.
   - No phone numbers (a common way private info leaks into a public room).
   - No message that's mostly links (a simple, low-false-positive proxy
     for spam/advertising, without trying to guess intent).
@@ -40,25 +40,53 @@ MAX_MESSAGE_LENGTH = 300
 STRIKE_WINDOW_HOURS = 24
 MESSAGES_PER_POLL = 50
 
-# Deliberately a short, high-confidence list: slurs and unambiguous abuse.
-# A longer list catches more but also blocks more ordinary conversation
-# (sports trash talk, quoting a rude driver, etc.) -- err toward fewer
-# false positives here and expand only with real evidence of a gap.
+# General vulgar/profane words, plus slurs and harassment phrases. Single
+# words are matched as whole words (see WORD_RES below) so this doesn't
+# flag substrings inside unrelated words (e.g. blocking "ass" must not
+# flag "class" or "assess"). Multi-word phrases are matched as substrings.
 BLOCKED_WORDS = [
-    "idiot", "stupid", "moron", "retard", "shut up", "kill yourself", "kys",
-    "loser", "trash", "hate you",
+    "fuck", "shit", "bitch", "bastard", "asshole", "dumbass", "jackass",
+    "cunt", "dick", "piss", "whore", "slut", "bullshit", "goddamn",
+    "idiot", "stupid", "moron", "retard", "faggot", "nigger", "nigga",
+    "loser",
 ]
+BLOCKED_PHRASES = [
+    "shut up", "kill yourself", "kys", "hate you",
+]
+
+# Common single-character substitutions people use to dodge a word filter
+# (e.g. "fuuuck", "f*ck", "sh1t"). This is a light normalization pass, not
+# a full evasion-proof system -- it catches the obvious cases without
+# trying to be clever about every possible workaround.
+LEET_MAP = str.maketrans({"@": "a", "4": "a", "3": "e", "1": "i", "!": "i", "0": "o", "$": "s"})
+REPEAT_RE = re.compile(r"(.)\1+")  # any run of a repeated character
+NON_WORD_GAP_RE = re.compile(r"[\s*._-]+")
+
+WORD_RES = [re.compile(r"\b" + re.escape(w) + r"\b") for w in BLOCKED_WORDS]
 
 PHONE_RE = re.compile(r"(?<!\d)(\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})(?!\d)")
 URL_RE = re.compile(r"https?://\S+|www\.\S+", re.IGNORECASE)
 
 
+def _normalize(text):
+    # This normalized form is only used to check for a match -- the
+    # original text is what actually gets stored/shown, untouched.
+    lower = text.lower().translate(LEET_MAP)
+    deduped = REPEAT_RE.sub(r"\1", lower)           # "fuuuck" -> "fuck"
+    collapsed = NON_WORD_GAP_RE.sub("", deduped)    # "f u c k" / "f-u-c-k" -> "fuck"
+    return deduped, collapsed
+
+
 def moderate(text):
     """Returns a rejection reason string, or None if the message is fine."""
-    lower = text.lower()
+    lower, collapsed = _normalize(text)
 
-    for word in BLOCKED_WORDS:
-        if word in lower:
+    for word_re, word in zip(WORD_RES, BLOCKED_WORDS):
+        if word_re.search(lower) or word in collapsed:
+            return "vulgar or abusive language"
+
+    for phrase in BLOCKED_PHRASES:
+        if phrase in lower:
             return "abusive language"
 
     if PHONE_RE.search(text):
