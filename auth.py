@@ -4,10 +4,12 @@ Authentication routes: signup now, login next.
 Kept as its own blueprint so auth-related routes have one clear home as
 more get added (login, logout, password reset, etc.).
 """
+import random
 import re
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import db, User
@@ -17,6 +19,37 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MAX_PASSWORD_LENGTH = 128  # bound input size; also limits hashing-cost abuse
 
+# A simple, self-hosted signup challenge -- no third-party service or API
+# keys needed. It's a basic bot deterrent, not a strong one: fine for
+# stopping naive scripted signups, not a determined attacker. The answer
+# is never sent to the client in a way it could read -- it's signed into
+# an opaque token the client just echoes back, and verified server-side.
+CAPTCHA_MAX_AGE_SECONDS = 10 * 60
+
+
+def _captcha_serializer():
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"], salt="signup-captcha")
+
+
+def _verify_captcha(token, answer):
+    if not token or answer is None:
+        return False
+    try:
+        expected = _captcha_serializer().loads(token, max_age=CAPTCHA_MAX_AGE_SECONDS)
+    except (BadSignature, SignatureExpired):
+        return False
+    try:
+        return int(answer) == int(expected)
+    except (TypeError, ValueError):
+        return False
+
+
+@auth_bp.get("/captcha")
+def captcha():
+    a, b = random.randint(1, 9), random.randint(1, 9)
+    token = _captcha_serializer().dumps(a + b)
+    return jsonify({"token": token, "question": f"What is {a} + {b}?"}), 200
+
 
 @auth_bp.post("/signup")
 def signup():
@@ -25,6 +58,8 @@ def signup():
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
+    captcha_token = data.get("captcha_token")
+    captcha_answer = data.get("captcha_answer")
 
     errors = {}
     if not name:
@@ -35,6 +70,8 @@ def signup():
         errors["password"] = "Password must be at least 8 characters."
     elif len(password) > MAX_PASSWORD_LENGTH:
         errors["password"] = f"Password must be {MAX_PASSWORD_LENGTH} characters or fewer."
+    if not _verify_captcha(captcha_token, captcha_answer):
+        errors["captcha"] = "That answer isn't right. Try the new question below."
 
     if errors:
         return jsonify({"errors": errors}), 400

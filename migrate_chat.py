@@ -22,6 +22,7 @@ with app.app_context():
         ("chat_strikes", "INTEGER NOT NULL DEFAULT 0"),
         ("chat_last_strike_at", "TIMESTAMP NULL"),
         ("chat_banned", "BOOLEAN NOT NULL DEFAULT FALSE"),
+        ("chat_moderation_exempt", "BOOLEAN NOT NULL DEFAULT FALSE"),
     ]
 
     for name, ddl_type in new_columns:

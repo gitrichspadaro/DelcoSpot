@@ -28,6 +28,10 @@ class User(db.Model, UserMixin):
     chat_strikes = db.Column(db.Integer, nullable=False, default=0)
     chat_last_strike_at = db.Column(db.DateTime, nullable=True)
     chat_banned = db.Column(db.Boolean, nullable=False, default=False)
+    # For testing the chat feature without tripping the real moderation --
+    # set via `python chat_admin.py exempt <email>`. Not exposed anywhere
+    # in the UI; this is a manual, deliberate flag for a specific account.
+    chat_moderation_exempt = db.Column(db.Boolean, nullable=False, default=False)
 
     def __repr__(self):
         return f"<User {self.email}>"

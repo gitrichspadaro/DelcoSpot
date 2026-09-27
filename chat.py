@@ -136,7 +136,7 @@ def get_messages():
         messages.reverse()
 
     return jsonify({
-        "banned": current_user.chat_banned,
+        "banned": current_user.chat_banned and not current_user.chat_moderation_exempt,
         "messages": [_serialize(m) for m in messages],
     }), 200
 
@@ -144,7 +144,9 @@ def get_messages():
 @chat_bp.post("/messages")
 @login_required
 def post_message():
-    if current_user.chat_banned:
+    exempt = current_user.chat_moderation_exempt
+
+    if current_user.chat_banned and not exempt:
         return jsonify({"errors": {"chat": "You've been banned from the chat room."}}), 403
 
     data = request.get_json(silent=True) or {}
@@ -155,7 +157,7 @@ def post_message():
     if len(text) > MAX_MESSAGE_LENGTH:
         return jsonify({"errors": {"text": f"Messages are limited to {MAX_MESSAGE_LENGTH} characters."}}), 400
 
-    reason = moderate(text)
+    reason = None if exempt else moderate(text)
     if reason:
         banned = _register_strike(current_user)
         if banned:

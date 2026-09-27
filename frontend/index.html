@@ -919,6 +919,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
       <label class="field"><span>Email</span><input type="email" id="signup-email" autocomplete="email"></label>
       <label class="field"><span>Password</span><input type="password" id="signup-password" autocomplete="new-password"></label>
       <label class="field"><span>Confirm password</span><input type="password" id="signup-confirm" autocomplete="new-password"></label>
+      <label class="field"><span id="signup-captcha-question">Loading a quick check&hellip;</span><input type="text" id="signup-captcha-answer" inputmode="numeric" autocomplete="off"></label>
       <p class="field-error" id="signup1-error" hidden></p>
       <button class="btn btn-primary btn-block" data-action="submit-signup1">Create account</button>
       <p class="modal-switch">Already have an account? <button class="link-btn" data-action="goto-login">Log in</button></p>
@@ -1065,6 +1066,24 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     }
   }
 
+  var signupCaptchaToken = null;
+
+  function loadSignupCaptcha() {
+    var q = document.getElementById('signup-captcha-question');
+    var a = document.getElementById('signup-captcha-answer');
+    if (a) a.value = '';
+    if (q) q.textContent = 'Loading a quick check…';
+    fetch('/api/auth/captcha')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        signupCaptchaToken = data.token;
+        if (q) q.textContent = data.question;
+      })
+      .catch(function () {
+        if (q) q.textContent = 'Could not load the verification question. Refresh and try again.';
+      });
+  }
+
   function apiPost(path, body) {
     return fetch(path, {
       method: 'POST',
@@ -1103,9 +1122,10 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
     if (action === 'close-modal') { closeModal(); return; }
     if (action === 'open-signup') {
       openModal('signup-1');
+      loadSignupCaptcha();
       return;
     }
-    if (action === 'goto-signup1') { setModalStep('signup-1'); return; }
+    if (action === 'goto-signup1') { setModalStep('signup-1'); loadSignupCaptcha(); return; }
     if (action === 'goto-login') { setModalStep('login'); return; }
 
     if (action === 'guest-continue') {
@@ -1142,16 +1162,22 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
       var email = document.getElementById('signup-email').value.trim();
       var pass = document.getElementById('signup-password').value;
       var confirm = document.getElementById('signup-confirm').value;
+      var captchaAnswer = document.getElementById('signup-captcha-answer').value.trim();
       var err1 = document.getElementById('signup1-error');
       if (!name || !email || !pass) { err1.textContent = 'Fill in all fields to continue.'; err1.hidden = false; return; }
       if (pass.length < 8) { err1.textContent = 'Use at least 8 characters for your password.'; err1.hidden = false; return; }
       if (pass !== confirm) { err1.textContent = 'Passwords do not match.'; err1.hidden = false; return; }
+      if (!captchaAnswer) { err1.textContent = 'Answer the verification question to continue.'; err1.hidden = false; return; }
       err1.hidden = true;
 
-      apiPost('/api/auth/signup', { name: name, email: email, password: pass }).then(function (signupRes) {
+      apiPost('/api/auth/signup', {
+        name: name, email: email, password: pass,
+        captcha_token: signupCaptchaToken, captcha_answer: captchaAnswer
+      }).then(function (signupRes) {
         if (!signupRes.ok) {
           err1.textContent = firstErrorMessage(signupRes.data, 'Could not create your account.');
           err1.hidden = false;
+          loadSignupCaptcha(); // old token may be spent/expired -- get a fresh question either way
           return;
         }
         return apiPost('/api/auth/login', { email: email, password: pass }).then(function (loginRes) {
@@ -1194,7 +1220,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
       el.innerHTML = '<button class="btn btn-accent btn-sm" id="btn-login">Log in</button>' +
         '<button class="btn btn-accent btn-sm" id="btn-signup">Sign up</button>';
       document.getElementById('btn-login').addEventListener('click', function () { openModal('login'); });
-      document.getElementById('btn-signup').addEventListener('click', function () { openModal('signup-1'); });
+      document.getElementById('btn-signup').addEventListener('click', function () { openModal('signup-1'); loadSignupCaptcha(); });
     } else {
       el.innerHTML =
         '<span class="account-chip"><span>' + escapeHtml(state.name) + '</span></span>' +
@@ -1205,7 +1231,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
 
   function initModal() {
     document.getElementById('btn-login').addEventListener('click', function () { openModal('login'); });
-    document.getElementById('btn-signup').addEventListener('click', function () { openModal('signup-1'); });
+    document.getElementById('btn-signup').addEventListener('click', function () { openModal('signup-1'); loadSignupCaptcha(); });
     document.getElementById('modal-backdrop').addEventListener('click', function (e) {
       if (e.target.id === 'modal-backdrop') closeModal();
     });
