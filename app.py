@@ -8,7 +8,7 @@ Checklist items get built out.
 """
 import os
 import secrets
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, Response, jsonify, send_from_directory
 from flask_login import LoginManager
 
 import sentry_sdk
@@ -109,6 +109,37 @@ def create_app():
         response = send_from_directory(frontend_dir, "index.html")
         response.headers["Cache-Control"] = "no-cache"
         return response
+
+    # SITE_URL lets this work correctly on Render preview/staging URLs too,
+    # without hardcoding the production domain -- defaults to production
+    # since that's what matters for actual search indexing.
+    site_url = os.environ.get("SITE_URL", "https://delcospot.com").rstrip("/")
+
+    @app.get("/robots.txt")
+    def robots_txt():
+        body = (
+            "User-agent: *\n"
+            "Allow: /\n"
+            f"Sitemap: {site_url}/sitemap.xml\n"
+        )
+        return Response(body, mimetype="text/plain")
+
+    @app.get("/sitemap.xml")
+    def sitemap_xml():
+        # This is a single-page app -- Dispatch/News/Chat are all sections
+        # of the same document (#-routed client-side), not separate URLs
+        # search engines can crawl independently, so there's exactly one
+        # real page to list. Nightlife/Jobs/Real Estate are hidden from
+        # navigation until they have real data, so nothing new to add here
+        # either.
+        urls = f"<url><loc>{site_url}/</loc></url>"
+        body = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+            f"{urls}"
+            "</urlset>"
+        )
+        return Response(body, mimetype="application/xml")
 
     @app.get("/api/status")
     def api_status():
