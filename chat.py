@@ -33,6 +33,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
 from models import ChatMessage, db
+from extensions import limiter
 
 chat_bp = Blueprint("chat", __name__, url_prefix="/api/chat")
 
@@ -143,6 +144,7 @@ def get_messages():
 
 @chat_bp.post("/messages")
 @login_required
+@limiter.limit("20 per minute")
 def post_message():
     exempt = current_user.chat_moderation_exempt
 

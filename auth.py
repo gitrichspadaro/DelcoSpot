@@ -13,6 +13,7 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from models import db, User
+from extensions import limiter
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
@@ -45,6 +46,7 @@ def _verify_captcha(token, answer):
 
 
 @auth_bp.get("/captcha")
+@limiter.limit("30 per hour")
 def captcha():
     a, b = random.randint(1, 9), random.randint(1, 9)
     token = _captcha_serializer().dumps(a + b)
@@ -52,6 +54,7 @@ def captcha():
 
 
 @auth_bp.post("/signup")
+@limiter.limit("5 per hour")
 def signup():
     data = request.get_json(silent=True) or {}
 
@@ -98,6 +101,7 @@ def signup():
 
 
 @auth_bp.post("/login")
+@limiter.limit("10 per 5 minutes")
 def login():
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()

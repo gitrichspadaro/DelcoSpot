@@ -10,11 +10,13 @@ import os
 import secrets
 from flask import Flask, Response, jsonify, send_from_directory
 from flask_login import LoginManager
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from models import db, User, Incident
+from extensions import limiter
 from auth import auth_bp
 from incidents import incidents_bp
 from sports import sports_bp
@@ -50,6 +52,13 @@ def unauthorized():
 def create_app():
     app = Flask(__name__)
 
+    # Render puts the app behind a reverse proxy, so every request arrives
+    # from Render's internal address unless we trust its X-Forwarded-For
+    # header -- without this, get_remote_address() would see one IP for
+    # every visitor and rate limit the whole site as a single client.
+    # x_for=1 trusts exactly one hop, matching Render's setup.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     # DATABASE_URL is read from the environment, never hardcoded, so the
     # real connection string never ends up in the code or in Git. Falls
     # back to a local SQLite file if it's not set, so the app still runs
@@ -84,6 +93,11 @@ def create_app():
 
     db.init_app(app)
     login_manager.init_app(app)
+    limiter.init_app(app)
+
+    @app.errorhandler(429)
+    def rate_limited(e):
+        return jsonify({"errors": {"rate_limit": "Too many requests. Please wait and try again."}}), 429
 
     with app.app_context():
         # Creates the users/incidents tables if they don't exist yet.
