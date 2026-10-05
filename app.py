@@ -22,6 +22,8 @@ from incidents import incidents_bp
 from sports import sports_bp
 from chat import chat_bp
 from venues import venues_bp
+from listings import listings_bp
+from weather import weather_bp
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 
@@ -110,6 +112,8 @@ def create_app():
     app.register_blueprint(sports_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(venues_bp)
+    app.register_blueprint(listings_bp)
+    app.register_blueprint(weather_bp)
 
     # The frontend is a single self-contained HTML file (no build step),
     # served directly from this Flask app so the site and its API share
