@@ -75,6 +75,36 @@ class Venue(db.Model):
         return f"<Venue {self.name} ({self.town})>"
 
 
+class Listing(db.Model):
+    __tablename__ = "listings"
+
+    # Real estate listings, manually curated -- same reasoning as Venue:
+    # IDX/MLS feeds require a real estate license. Zillow, Redfin, and
+    # Realtor.com are NOT valid sources for listing_url/source_label --
+    # each one's Terms of Use restricts not just automated scraping but
+    # displaying their listing data at all (even hand-typed), and limits
+    # linking to their listing pages to real-estate-licensed sites, which
+    # this isn't. listing_url should be the listing agent's/brokerage's
+    # own page, an FSBO platform that allows link-outs, or similar.
+    # Add/edit/remove via listing_admin.py on the Render Web Shell.
+    id = db.Column(db.Integer, primary_key=True)
+    address = db.Column(db.String(200), nullable=False)
+    town = db.Column(db.String(120), nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    beds = db.Column(db.Integer, nullable=False)
+    baths = db.Column(db.Float, nullable=False)
+    sqft = db.Column(db.Integer, nullable=True)
+    property_type = db.Column(db.String(40), nullable=False)   # Single, Twin, Row, Condo
+    listing_url = db.Column(db.String(500), nullable=False)    # agent's/brokerage's own listing page
+    source_label = db.Column(db.String(60), nullable=True)     # e.g. "Jane Doe Realty", "Listed by owner"
+    # Controls whether it shows on the site without deleting the row.
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def __repr__(self):
+        return f"<Listing {self.address} ({self.town})>"
+
+
 class Incident(db.Model):
     __tablename__ = "incidents"
 

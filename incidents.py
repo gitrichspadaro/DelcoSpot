@@ -28,13 +28,23 @@ ANONYMOUS_WINDOW_HOURS = 24
 
 
 # The county feed has no priority or severity field, so instead of guessing
-# one we show which service responded (Fire / EMS / Police). That comes from
-# the county's own call type, falling back to the kind of units dispatched.
+# one we show which service responded (Fire / EMS). That comes from the
+# county's own call type, falling back to the kind of units dispatched.
+#
+# There is no "Police" branch here on purpose: the feed behind this
+# (api.delcodispat.ch) only ever carries Fire and EMS dispatch calls --
+# confirmed by sampling it directly, not an assumption. PA county CAD feeds
+# generally don't publish police dispatch at all (unlike fire/EMS, which
+# municipalities commonly broadcast), since it can tip off suspects or
+# reveal officer locations during active calls. If police incidents are
+# ever added, they'll have to come from a different, manually-curated
+# source (e.g. a police_admin.py CLI fed from press releases/township
+# social media, matching the venue_admin.py/listing_admin.py pattern) --
+# not from this feed, which will never contain them.
 EMS_TYPE_WORDS = ("EMS", "ALS", "BLS", "MEDICAL", "AMBULANCE", "CARDIAC", "OVERDOSE")
 FIRE_TYPE_WORDS = ("FIRE", "ALARM", "SMOKE", "GAS", "HAZMAT", "HAZ MAT", "RESCUE",
                    "WIRES", "WIRE", "EXPLOSION", "CO", "CARBON MONOXIDE", "ODOR",
                    "ELEVATOR", "FD")
-POLICE_TYPE_WORDS = ("POLICE", "PD")
 EMS_UNIT_WORDS = ("MEDIC", "AMBULANCE", "MICU", "EMS", "BLS", "ALS")
 FIRE_UNIT_WORDS = ("COMPANY", "ENGINE", "LADDER", "TRUCK", "SQUAD", "RESCUE", "TOWER",
                    "CHIEF", "FIRE", "TANKER", "BRUSH", "QUINT")
@@ -51,12 +61,8 @@ def classify_service(incident_type, unit):
     # "ALS-EMS ...", "BLS-EMS ..." -- the county's own EMS call codes.
     if _has_word(call, EMS_TYPE_WORDS):
         return "EMS"
-    # Checked before police: "ASSIST FD TO ASSIST POLICE" is a fire
-    # department call (the fire company is what gets sent).
     if _has_word(call, FIRE_TYPE_WORDS):
         return "Fire"
-    if _has_word(call, POLICE_TYPE_WORDS):
-        return "Police"
 
     units = (unit or "").upper()
     if _has_word(units, FIRE_UNIT_WORDS):
