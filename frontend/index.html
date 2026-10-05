@@ -639,7 +639,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
           <label class="filter"><span>Search address or incident</span><input type="search" id="f-search" placeholder="e.g. Chester Pike"></label>
           <label class="filter"><span>Municipality</span><select id="f-town"><option value="">All municipalities</option></select></label>
           <label class="filter"><span>Incident type</span><select id="f-type"><option value="">All types</option></select></label>
-          <label class="filter"><span>Service</span><select id="f-service"><option value="">All services</option><option>Fire</option><option>EMS</option><option>Police</option><option>Other</option></select></label>
+          <label class="filter"><span>Service</span><select id="f-service"><option value="">All services</option><option>Fire</option><option>EMS</option><option>Other</option></select></label>
           <label class="filter"><span>Status</span><select id="f-status"><option value="">All statuses</option><option>Active</option><option>Cleared</option></select></label>
           <button class="btn btn-outline btn-sm" id="f-reset">Clear filters</button>
         </div>
@@ -1351,7 +1351,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
   }
 
   function servicePill(s) {
-    var cls = { Fire: 'fire', EMS: 'ems', Police: 'police' }[s] || 'other';
+    var cls = { Fire: 'fire', EMS: 'ems' }[s] || 'other';
     return '<span class="pill pill-' + cls + '">' + escapeHtml(s) + '</span>';
   }
   function statusPill(s) {
