@@ -8,7 +8,7 @@ Checklist items get built out.
 """
 import os
 import secrets
-from flask import Flask, Response, jsonify, send_from_directory
+from flask import Flask, Response, jsonify, redirect, send_from_directory
 from flask_login import LoginManager
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -128,6 +128,24 @@ def create_app():
         response.headers["Cache-Control"] = "no-cache"
         return response
 
+    # Delco 3D map: a separate self-contained page in frontend/map/.
+    # /map redirects to /map/ so the page's relative paths (data/...) resolve.
+    map_dir = os.path.join(frontend_dir, "map")
+
+    @app.get("/map")
+    def map_redirect():
+        return redirect("/map/", code=301)
+
+    @app.get("/map/")
+    def map_page():
+        response = send_from_directory(map_dir, "index.html")
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+    @app.get("/map/data/<path:filename>")
+    def map_data(filename):
+        return send_from_directory(os.path.join(map_dir, "data"), filename)
+
     # SITE_URL lets this work correctly on Render preview/staging URLs too,
     # without hardcoding the production domain -- defaults to production
     # since that's what matters for actual search indexing.
@@ -144,13 +162,16 @@ def create_app():
 
     @app.get("/sitemap.xml")
     def sitemap_xml():
-        # This is a single-page app -- Dispatch/News/Chat are all sections
+        # The main site is a single-page app -- Dispatch/News/Chat are all sections
         # of the same document (#-routed client-side), not separate URLs
         # search engines can crawl independently, so there's exactly one
-        # real page to list. Nightlife/Jobs/Real Estate are hidden from
-        # navigation until they have real data, so nothing new to add here
-        # either.
-        urls = f"<url><loc>{site_url}/</loc></url>"
+        # real page to list there, plus the separate 3D map page at /map/.
+        # Nightlife/Jobs/Real Estate are hidden from navigation until they
+        # have real data, so nothing new to add for those.
+        urls = (
+            f"<url><loc>{site_url}/</loc></url>"
+            f"<url><loc>{site_url}/map/</loc></url>"
+        )
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'

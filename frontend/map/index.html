@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Map · Delaware County in 3D · DelcoSpot</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<meta name="description" content="Explore Delaware County, PA in 3D: terrain, aerial imagery, all 49 municipalities, buildings, landmarks and live dispatch activity.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<style>
+:root {
+  --font-sans: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, serif;
+  --glass: rgba(24, 22, 32, 0.72);
+  --glass-strong: rgba(24, 22, 32, 0.86);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --text: #F6F3F8;
+  --text-soft: #C9C2D2;
+  --amber: #F0C46B;
+  --brick: #E0738C;
+  --ems: #F0C46B;
+  --fire: #F2575F;
+  --other: #8FB8E8;
+  --moss: #6FD3A0;
+  --venue: #C89CF2;
+  --slate: #4C5FA3;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #0f0e14; color: var(--text); font-family: var(--font-sans); overflow: hidden; }
+#map { position: absolute; inset: 0; }
+button { font-family: inherit; }
+
+/* ---------- glass panels ---------- */
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+/* brand card */
+#brand { position: absolute; top: 16px; left: 16px; padding: 14px 18px; z-index: 5; max-width: 320px; }
+#brand .eyebrow { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--amber); font-weight: 700; }
+#brand h1 { margin: 2px 0 2px; font-family: var(--font-serif); font-size: 24px; line-height: 1.15; font-weight: 700; }
+#brand p { margin: 0; font-size: 13px; color: var(--text-soft); }
+#brand a { color: var(--text); text-decoration: none; border-bottom: 1px solid rgba(255,255,255,.3); }
+#brand a:hover { border-color: var(--amber); }
+
+/* control panel */
+#panel { position: absolute; top: 16px; right: 16px; width: 260px; padding: 14px; z-index: 5; }
+#panel h2 { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-soft); margin: 14px 0 8px; font-weight: 700; }
+#panel h2:first-child { margin-top: 0; }
+#panel .collapsible h2:first-child { margin-top: 14px; }
+.lm.nolabel .name { display: none; }
+.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn {
+  appearance: none; border: 1px solid var(--glass-border); border-radius: 10px;
+  padding: 10px 10px; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--text);
+  background: rgba(255,255,255,0.06); transition: background .15s, transform .1s;
+}
+.btn:hover { background: rgba(255,255,255,0.14); }
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--amber); color: #2b2210; border-color: transparent; }
+.btn-primary:hover { background: #f5d38c; }
+.btn-primary.running { background: var(--brick); color: #fff; }
+.toggle { display: flex; align-items: center; justify-content: space-between; padding: 7px 2px; font-size: 14px; cursor: pointer; user-select: none; }
+.toggle .lbl { display: flex; align-items: center; gap: 9px; }
+.swatch { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+.toggle input { display: none; }
+.switch { width: 34px; height: 20px; border-radius: 999px; background: rgba(255,255,255,.18); position: relative; transition: background .15s; flex-shrink: 0; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.toggle input:checked + .switch { background: var(--moss); }
+.toggle input:checked + .switch::after { transform: translateX(14px); }
+.slider-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-soft); }
+.slider-row input { flex: 1; accent-color: var(--amber); }
+.hint { font-size: 12px; color: var(--text-soft); margin-top: -2px; }
+#status { margin-top: 12px; font-size: 12px; color: var(--text-soft); line-height: 1.45; }
+#status .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--moss); margin-right: 6px; vertical-align: 1px; }
+#status .dot.sample { background: var(--amber); }
+#panel-toggle { display: none; }
+
+/* tour caption */
+#caption {
+  position: absolute; left: 50%; bottom: 34px; transform: translate(-50%, 20px);
+  width: min(560px, calc(100% - 32px)); padding: 16px 20px; z-index: 5;
+  opacity: 0; pointer-events: none; transition: opacity .4s, transform .4s;
+}
+#caption.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#caption .step { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--amber); font-weight: 700; }
+#caption h3 { margin: 3px 0 4px; font-family: var(--font-serif); font-size: 22px; }
+#caption p { margin: 0; font-size: 14px; color: var(--text-soft); line-height: 1.5; }
+#caption .dots { display: flex; gap: 5px; margin-top: 10px; }
+#caption .dots span { height: 4px; flex: 1; border-radius: 2px; background: rgba(255,255,255,.18); }
+#caption .dots span.on { background: var(--amber); }
+
+/* hover tip */
+#tip { position: absolute; z-index: 6; pointer-events: none; padding: 6px 10px; font-size: 13px; font-weight: 600; border-radius: 8px; background: var(--glass-strong); border: 1px solid var(--glass-border); display: none; white-space: nowrap; }
+
+/* loader */
+#loader { position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+  background: radial-gradient(ellipse at center, #2a2536 0%, #0f0e14 70%); transition: opacity .7s; }
+#loader.hide { opacity: 0; pointer-events: none; }
+#loader .ring { width: 46px; height: 46px; border-radius: 50%; border: 3px solid rgba(255,255,255,.12); border-top-color: var(--amber); animation: spin 1s linear infinite; }
+#loader .t { font-family: var(--font-serif); font-size: 22px; }
+#loader .s { font-size: 13px; color: var(--text-soft); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* markers */
+.mk { cursor: pointer; }
+.inc { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; position: relative; box-shadow: 0 0 0 2px rgba(0,0,0,.25); }
+.inc::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid currentColor; animation: pulse 2s ease-out infinite; }
+.inc-ems { background: var(--ems); color: var(--ems); }
+.inc-fire { background: var(--fire); color: var(--fire); }
+.inc-other { background: var(--other); color: var(--other); }
+@keyframes pulse { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.2); opacity: 0; } }
+.lm { display: flex; align-items: center; gap: 6px; }
+.lm .pin { width: 12px; height: 12px; border-radius: 50%; background: var(--moss); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); flex-shrink: 0; }
+.lm.venue .pin { background: var(--venue); width: 10px; height: 10px; }
+.lm .name { font-size: 12px; font-weight: 700; color: #fff; padding: 3px 8px; border-radius: 6px; background: rgba(20,18,28,.72); border: 1px solid rgba(255,255,255,.15); white-space: nowrap; }
+.far .lm .name { display: none; }
+
+/* popups */
+.maplibregl-popup-content { background: var(--glass-strong); color: var(--text); border-radius: 12px; border: 1px solid var(--glass-border); padding: 12px 14px; font-family: var(--font-sans); box-shadow: 0 10px 30px rgba(0,0,0,.4); backdrop-filter: blur(12px); max-width: 280px; }
+.maplibregl-popup-tip { border-top-color: var(--glass-strong) !important; border-bottom-color: var(--glass-strong) !important; }
+.maplibregl-popup-close-button { color: var(--text-soft); font-size: 18px; padding: 2px 8px; }
+.pop-k { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--amber); }
+.pop-h { font-weight: 800; font-size: 15px; margin: 2px 0 6px; padding-right: 14px; }
+.pop-r { font-size: 13px; color: var(--text-soft); line-height: 1.5; }
+.pop-r a { color: var(--amber); }
+.pop-btn { margin-top: 8px; }
+
+/* attribution + nav controls on dark */
+.maplibregl-ctrl-attrib { background: rgba(20,18,28,.6) !important; color: var(--text-soft); font-size: 11px; }
+.maplibregl-ctrl-attrib a { color: var(--text-soft); }
+.maplibregl-ctrl-attrib-button { filter: invert(1); }
+.maplibregl-ctrl-group { background: var(--glass) !important; border: 1px solid var(--glass-border); }
+.maplibregl-ctrl-group button + button { border-top-color: var(--glass-border) !important; }
+.maplibregl-ctrl-group button span { filter: invert(1); }
+.maplibregl-ctrl-bottom-right { margin-bottom: 4px; }
+
+/* mobile */
+@media (max-width: 720px) {
+  #brand { right: 16px; max-width: none; padding: 10px 14px; }
+  #brand h1 { font-size: 19px; }
+  #brand p { display: none; }
+  #panel { top: auto; bottom: 16px; right: 16px; left: 16px; width: auto; max-height: 46vh; overflow-y: auto; }
+  #panel.collapsed .collapsible { display: none; }
+  #panel-toggle { display: block; width: 100%; margin-top: 8px; }
+  #caption { bottom: auto; top: 86px; }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group, .maplibregl-ctrl-scale { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="map" aria-label="3D map of Delaware County, Pennsylvania"></div>
+
+<div id="loader">
+  <div class="ring"></div>
+  <div class="t">Delco 3D</div>
+  <div class="s" id="loader-msg">Loading terrain and imagery…</div>
+</div>
+
+<div id="brand" class="glass">
+  <div class="eyebrow"><a href="https://www.delcospot.com/" id="brand-link" style="color:inherit;border:0">DelcoSpot</a></div>
+  <h1>Delaware County in 3D</h1>
+  <p>Drag to move, right-drag (or two fingers) to tilt and turn. <a href="https://www.delcospot.com/" id="home-link">Back to DelcoSpot</a></p>
+</div>
+
+<div id="panel" class="glass collapsed">
+  <div class="btn-row">
+    <button class="btn btn-primary" id="tour-btn">▶ Fly the county</button>
+    <button class="btn" id="home-btn">⟲ Reset to river</button>
+  </div>
+  <button class="btn" id="panel-toggle">Layers &amp; settings</button>
+  <div class="collapsible">
+    <h2>Layers</h2>
+    <label class="toggle"><span class="lbl"><span class="swatch" style="background:#fff;border:2px solid var(--amber)"></span>Municipality borders</span><input type="checkbox" id="t-borders" checked><span class="switch"></span></label>
+    <label class="toggle"><span class="lbl"><span class="swatch" style="background:#d9c7a8"></span>3D buildings</span><input type="checkbox" id="t-buildings" checked><span class="switch"></span></label>
+    <label class="toggle"><span class="lbl"><span class="swatch" style="background:var(--fire);border-radius:50%"></span>Dispatch incidents</span><input type="checkbox" id="t-incidents" checked><span class="switch"></span></label>
+    <label class="toggle"><span class="lbl"><span class="swatch" style="background:var(--moss);border-radius:50%"></span>Landmarks &amp; venues</span><input type="checkbox" id="t-landmarks" checked><span class="switch"></span></label>
+    <label class="toggle"><span class="lbl"><span class="swatch" style="background:rgba(255,255,255,.7)"></span>Street &amp; place names</span><input type="checkbox" id="t-labels" checked><span class="switch"></span></label>
+    <h2>Terrain height</h2>
+    <div class="slider-row"><span>1×</span><input type="range" id="exag" min="1" max="5" step="0.5" value="2.5"><span id="exag-val">2.5×</span></div>
+    <label class="toggle"><span class="lbl">Flatten when zoomed in</span><input type="checkbox" id="t-autoflat" checked><span class="switch"></span></label>
+    <div class="hint" id="exag-now"></div>
+    <div id="status"><span class="dot" id="status-dot"></span><span id="status-text">Loading…</span></div>
+  </div>
+</div>
+
+<div id="caption" class="glass" aria-live="polite">
+  <div class="step" id="cap-step"></div>
+  <h3 id="cap-title"></h3>
+  <p id="cap-body"></p>
+  <div class="dots" id="cap-dots"></div>
+</div>
+
+<div id="tip"></div>
+
+<script src="data/sample-incidents.js"></script>
+<script>
+(() => {
+'use strict';
+
+// ------------------------------------------------------------------
+// Config
+// ------------------------------------------------------------------
+// Opened from your computer (file://) = preview mode: uses sample
+// incidents and skips /api calls. On delcospot.com it uses live data.
+const IS_LIVE_SITE = location.protocol === 'http:' || location.protocol === 'https:';
+
+// Starting view: camera low over the Delaware River just off Tinicum
+// Township, looking northwest across the county toward Media.
+const HOME_FROM = { lng: -75.2865, lat: 39.8495, alt: 650 };   // camera position (meters above sea level)
+const HOME_TO   = { lng: -75.3380, lat: 39.8860 };             // point the camera looks at
+const HOME_FALLBACK = { center: [-75.322, 39.874], zoom: 13.4, pitch: 76, bearing: -47 };
+
+const IMAGERY = {
+  usgs: {
+    tiles: ['https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}'],
+    maxzoom: 16,
+    attribution: 'Imagery: <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map" target="_blank" rel="noopener">USGS The National Map</a>'
+  },
+  // Sharper close-up layer: PA statewide PEMA orthoimagery 2018–2020 (~1 ft/pixel, public), via PASDA.
+  pema: {
+    tiles: ['https://services.pasda.psu.edu/server/rest/services/PEMAImagery2018_2020_cache/MapServer/tile/{z}/{y}/{x}'],
+    // Backup if the pre-cut tiles fail: the same imagery drawn on demand.
+    exportTiles: ['https://services.pasda.psu.edu/server/rest/services/pasda/PEMAImagery2018_2020/MapServer/export?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=jpg&f=image'],
+    minzoom: 13,
+    maxzoom: 18,
+    attribution: 'Close-up imagery: <a href="https://www.pasda.psu.edu/" target="_blank" rel="noopener">PEMA 2018–2020 via PASDA</a>'
+  },
+  // Fallback if USGS is down: Sentinel-2 cloudless 2016 by EOX (CC BY 4.0). Lower resolution.
+  eox: {
+    tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg'],
+    maxzoom: 14,
+    attribution: '<a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless – s2maps.eu by EOX IT Services GmbH</a> (contains modified Copernicus Sentinel data 2016)'
+  }
+};
+
+// Municipal boundaries. Tried in order until one returns features.
+const BOUNDARY_SOURCES = [
+  // Cached copy served by delcospot.com (optional; see README).
+  ...(IS_LIVE_SITE ? [{ label: 'cached', url: 'data/delco-municipalities.geojson' }] : []),
+  // Pennsylvania Game Commission layer built from PennDOT municipal boundaries.
+  { label: 'PennDOT / PGC', url: 'https://pgcportal.pa.gov/arcgis/rest/services/GIS/Lookup/FeatureServer/350/query?where=' +
+      encodeURIComponent("UPPER(cnty_name)='DELAWARE'") + '&outFields=*&returnGeometry=true&outSR=4326&geometryPrecision=6&f=geojson' },
+  // US Census TIGERweb county subdivisions (state 42 = PA, county 045 = Delaware).
+  { label: 'US Census', url: 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer/1/query?where=' +
+      encodeURIComponent("STATE='42' AND COUNTY='045'") + '&outFields=NAME,BASENAME,AREALAND&returnGeometry=true&outSR=4326&geometryPrecision=6&f=geojson' }
+];
+
+const LANDMARKS = [
+  { name: 'Philadelphia International Airport', lng: -75.2424, lat: 39.8744, blurb: 'Most of PHL’s runways sit in Tinicum Township, Delaware County.' },
+  { name: 'John Heinz National Wildlife Refuge', lng: -75.2593, lat: 39.8913, blurb: 'America’s first urban wildlife refuge, protecting Pennsylvania’s largest remaining freshwater tidal marsh.' },
+  { name: 'Subaru Park', lng: -75.3789, lat: 39.8321, blurb: 'Home of the Philadelphia Union, on the Chester waterfront under the Commodore Barry Bridge.' },
+  { name: 'Commodore Barry Bridge', lng: -75.3755, lat: 39.8268, blurb: 'Cantilever bridge linking Chester, PA to Bridgeport, NJ.' },
+  { name: 'Widener University', lng: -75.3567, lat: 39.8622, blurb: 'Private university in Chester.' },
+  { name: 'Swarthmore College', lng: -75.3540, lat: 39.9055, blurb: 'Liberal arts college with the Scott Arboretum woven through campus.' },
+  { name: 'Delaware County Courthouse', lng: -75.3906, lat: 39.9175, blurb: 'The county seat, on Front Street in Media.' },
+  { name: 'Ridley Creek State Park', lng: -75.4500, lat: 39.9510, blurb: '2,600 acres of woods, trails and the Colonial Pennsylvania Plantation.' },
+  { name: 'Tyler Arboretum', lng: -75.4373, lat: 39.9348, blurb: 'One of the oldest arboretums in the Northeast, spanning 650 acres.' },
+  { name: 'Newlin Grist Mill', lng: -75.5141, lat: 39.9077, blurb: 'Working 1704 grist mill and park in Glen Mills.' },
+  { name: '69th Street Transportation Center', lng: -75.2594, lat: 39.9620, blurb: 'Upper Darby hub for the Market-Frankford Line, trolleys and buses.' },
+  { name: 'Haverford College', lng: -75.3060, lat: 40.0087, blurb: 'Quaker-founded college in Haverford.' },
+  { name: 'Villanova University', lng: -75.3443, lat: 40.0379, blurb: 'Augustinian university in Radnor Township.' }
+];
+
+const TOUR = [
+  { title: 'The Delaware River at Tinicum', body: 'Delco’s southern edge is the river. Tinicum Township sits on land that was once an island in the marshes.', camera: 'home', hold: 4500 },
+  { title: 'Philadelphia International Airport', body: 'Most of PHL lies inside Tinicum Township, so a good share of every Philly flight leaves from Delco.', camera: { center: [-75.2424, 39.8744], zoom: 13.6, pitch: 62, bearing: 20 }, hold: 5000 },
+  { title: 'John Heinz Wildlife Refuge', body: 'Tidal marsh, trails and more than 300 bird species, right next to the airport.', camera: { center: [-75.2593, 39.8913], zoom: 14.2, pitch: 65, bearing: -30 }, hold: 5000 },
+  { title: 'Chester Waterfront', body: 'Subaru Park and the Commodore Barry Bridge anchor Delco’s only city.', camera: { center: [-75.3775, 39.8300], zoom: 15.2, pitch: 68, bearing: 40 }, hold: 5500 },
+  { title: 'Swarthmore', body: 'Crum Creek’s valley curves past the college and the borough.', camera: { center: [-75.3540, 39.9030], zoom: 14.6, pitch: 66, bearing: -15 }, hold: 5000 },
+  { title: 'Media, the County Seat', body: '“Everybody’s Hometown.” State Street, the courthouse and the trolley.', camera: { center: [-75.3895, 39.9172], zoom: 15.4, pitch: 70, bearing: 25 }, hold: 5500 },
+  { title: 'Ridley Creek State Park', body: 'Rolling, wooded land in the county’s higher western half.', camera: { center: [-75.4500, 39.9480], zoom: 13.4, pitch: 72, bearing: 60 }, hold: 5000 },
+  { title: 'Upper Darby & 69th Street', body: 'Delco’s most populous township, where the El ends and the trolleys begin.', camera: { center: [-75.2610, 39.9600], zoom: 15.0, pitch: 66, bearing: -40 }, hold: 5000 },
+  { title: 'Radnor & the Main Line', body: 'Villanova and the northern tip of the county.', camera: { center: [-75.3443, 40.0360], zoom: 14.2, pitch: 64, bearing: 10 }, hold: 5000 },
+  { title: 'All of Delaware County', body: '49 municipalities in 191 square miles, from the Main Line to the river.', camera: { center: [-75.395, 39.915], zoom: 10.6, pitch: 55, bearing: -20 }, hold: 5500 },
+  { title: 'Back to the River', body: 'Explore on your own. Click any township or borough to fly there.', camera: 'home', hold: 3500 }
+];
+
+// ------------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------------
+const $ = (id) => document.getElementById(id);
+// On the live site, keep people on whichever domain they came in on.
+if (IS_LIVE_SITE) { ['home-link', 'brand-link'].forEach(id => { const a = document.getElementById(id); if (a) a.href = '/'; }); }
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const titleCase = (s) => String(s).toLowerCase().replace(/\b([a-z])/g, m => m.toUpperCase()).replace(/\bMc([a-z])/g, (m, c) => 'Mc' + c.toUpperCase());
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const normTown = (s) => String(s || '').toLowerCase().replace(/\b(township|twp|borough|boro|city|of)\b\.?/g, '').replace(/[^a-z]/g, '');
+
+function setStatus(text, sample) {
+  $('status-text').textContent = text;
+  $('status-dot').classList.toggle('sample', !!sample);
+}
+
+// Work out a display name ("Tinicum Township") from whatever fields the boundary source uses.
+function muniName(p) {
+  const keys = Object.keys(p);
+  const get = (re) => { const k = keys.find(k => re.test(k)); return k ? p[k] : null; };
+  let name = p.NAME || get(/^muni_?name$/i) || get(/^mun.*name/i) || get(/^name$/i) || p.BASENAME || 'Municipality';
+  name = titleCase(String(name).trim());
+  if (/\b(Township|Borough|City)$/i.test(name)) return name;
+  const classKey = keys.find(k => /class|type/i.test(k) && /^(twp|township|bor|boro|borough|city|1|2)/i.test(String(p[k] || '')));
+  const cls = classKey ? String(p[classKey]).toLowerCase() : '';
+  if (/^t/.test(cls)) return name + ' Township';
+  if (/^b/.test(cls)) return name + ' Borough';
+  if (/^c/.test(cls)) return name === 'Chester' ? 'City of Chester' : name + ' City';
+  return name;
+}
+function muniArea(p) {
+  if (p.AREALAND) return p.AREALAND / 2589988.11;
+  const k = Object.keys(p).find(k => /area_?sq_?mi/i.test(k));
+  return k ? Number(p[k]) : null;
+}
+
+// Centroid of the largest outer ring (good enough for labels and venue pins).
+function ringArea(r) { let a = 0; for (let i = 0, j = r.length - 1; i < r.length; j = i++) a += (r[j][0] + r[i][0]) * (r[j][1] - r[i][1]); return a / 2; }
+function ringCentroid(r) {
+  let x = 0, y = 0, a = 0;
+  for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+    const f = r[j][0] * r[i][1] - r[i][0] * r[j][1];
+    x += (r[j][0] + r[i][0]) * f; y += (r[j][1] + r[i][1]) * f; a += f;
+  }
+  if (!a) return r[0];
+  return [x / (3 * a), y / (3 * a)];
+}
+function outerRings(geom) {
+  if (!geom) return [];
+  if (geom.type === 'Polygon') return [geom.coordinates[0]];
+  if (geom.type === 'MultiPolygon') return geom.coordinates.map(p => p[0]);
+  return [];
+}
+function featureCentroid(f) {
+  const rings = outerRings(f.geometry);
+  if (!rings.length) return null;
+  rings.sort((a, b) => Math.abs(ringArea(b)) - Math.abs(ringArea(a)));
+  return ringCentroid(rings[0]);
+}
+function featureBounds(f) {
+  const b = new maplibregl.LngLatBounds();
+  outerRings(f.geometry).forEach(r => r.forEach(c => b.extend(c)));
+  return b;
+}
+// County outline = boundary edges used by exactly one municipality.
+function countyOutline(features) {
+  const key = (a, b) => { const p = a[0].toFixed(5) + ',' + a[1].toFixed(5), q = b[0].toFixed(5) + ',' + b[1].toFixed(5); return p < q ? p + '|' + q : q + '|' + p; };
+  const counts = new Map();
+  const segs = [];
+  features.forEach(f => outerRings(f.geometry).forEach(r => {
+    for (let i = 0; i < r.length - 1; i++) { const k = key(r[i], r[i + 1]); counts.set(k, (counts.get(k) || 0) + 1); segs.push([k, r[i], r[i + 1]]); }
+  }));
+  const lines = segs.filter(s => counts.get(s[0]) === 1).map(s => [s[1], s[2]]);
+  return { type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: lines } };
+}
+
+// ------------------------------------------------------------------
+// Map
+// ------------------------------------------------------------------
+const style = {
+  version: 8,
+  glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+  sources: {
+    imagery: { type: 'raster', tiles: IMAGERY.usgs.tiles, tileSize: 256, maxzoom: IMAGERY.usgs.maxzoom, attribution: IMAGERY.usgs.attribution },
+    dem: { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: 15,
+      attribution: 'Elevation: <a href="https://registry.opendata.aws/terrain-tiles/" target="_blank" rel="noopener">Terrain Tiles (AWS Open Data)</a>' },
+    pema: { type: 'raster', tiles: IMAGERY.pema.tiles, tileSize: 256, minzoom: IMAGERY.pema.minzoom, maxzoom: IMAGERY.pema.maxzoom, attribution: IMAGERY.pema.attribution,
+      bounds: [-75.65, 39.80, -75.18, 40.08] },
+    hillshadeDem: { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], encoding: 'terrarium', tileSize: 256, maxzoom: 15 },
+    ofm: { type: 'vector', url: 'https://tiles.openfreemap.org/planet',
+      attribution: '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>' }
+  },
+  layers: [
+    { id: 'bg', type: 'background', paint: { 'background-color': '#1b2a33' } },
+    { id: 'imagery', type: 'raster', source: 'imagery', paint: { 'raster-saturation': -0.08, 'raster-contrast': 0.08, 'raster-fade-duration': 250 } },
+    { id: 'imagery-hires', type: 'raster', source: 'pema', minzoom: 12.5,
+      paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 12.5, 0, 13.5, 1], 'raster-contrast': 0.06, 'raster-fade-duration': 250 } },
+    { id: 'hillshade', type: 'hillshade', source: 'hillshadeDem', paint: { 'hillshade-exaggeration': ['interpolate', ['linear'], ['zoom'], 11, 0.35, 15, 0.1], 'hillshade-shadow-color': 'rgba(10,10,30,0.55)', 'hillshade-highlight-color': 'rgba(255,255,240,0.18)', 'hillshade-accent-color': 'rgba(0,0,0,0.2)' } },
+    { id: 'buildings', type: 'fill-extrusion', source: 'ofm', 'source-layer': 'building', minzoom: 13.5,
+      filter: ['!=', ['get', 'hide_3d'], true],
+      paint: {
+        // Taller buildings read as glass/steel; houses and rowhomes get a mix of brick, stone and siding tones.
+        'fill-extrusion-color': ['case',
+          ['>', ['coalesce', ['get', 'render_height'], 0], 25], ['to-color', ['at', ['%', ['abs', ['to-number', ['id'], 0]], 3], ['literal', ['#b8c3cf', '#a9b6c4', '#c9ced3']]]],
+          ['to-color', ['at', ['%', ['abs', ['to-number', ['id'], 0]], 7], ['literal', ['#e9e3d8', '#d9cfbf', '#c8b49c', '#b98f78', '#a8735f', '#d6d3cc', '#c2b8a8']]]]],
+        'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 13.5, 0, 14.5, ['coalesce', ['get', 'render_height'], 8]],
+        'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+        'fill-extrusion-opacity': 0.92,
+        'fill-extrusion-vertical-gradient': true
+      } },
+    { id: 'road-names', type: 'symbol', source: 'ofm', 'source-layer': 'transportation_name', minzoom: 14,
+      layout: { 'symbol-placement': 'line', 'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name']], 'text-font': ['Noto Sans Regular'], 'text-size': 12, 'text-max-angle': 30 },
+      paint: { 'text-color': '#ffffff', 'text-halo-color': 'rgba(15,14,20,0.85)', 'text-halo-width': 1.4 } },
+    { id: 'place-names', type: 'symbol', source: 'ofm', 'source-layer': 'place', minzoom: 12.5,
+      filter: ['in', ['get', 'class'], ['literal', ['village', 'suburb', 'neighbourhood', 'hamlet', 'quarter']]],
+      layout: { 'text-field': ['coalesce', ['get', 'name:en'], ['get', 'name']], 'text-font': ['Noto Sans Regular'], 'text-size': 12, 'text-transform': 'uppercase', 'text-letter-spacing': 0.08 },
+      paint: { 'text-color': 'rgba(255,255,255,0.85)', 'text-halo-color': 'rgba(15,14,20,0.8)', 'text-halo-width': 1.2 } }
+  ],
+  sky: {
+    'sky-color': '#79a8d8',
+    'horizon-color': '#e4ecf3',
+    'fog-color': '#dfe7ee',
+    'sky-horizon-blend': 0.55,
+    'horizon-fog-blend': 0.7,
+    'fog-ground-blend': 0.35,
+    'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 10, 1, 12, 0]
+  },
+  terrain: { source: 'dem', exaggeration: 2.5 },
+  light: { anchor: 'viewport', color: '#ffffff', intensity: 0.38, position: [1.2, 210, 35] }
+};
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style,
+  ...HOME_FALLBACK,
+  maxPitch: 85,
+  minZoom: 8.5,
+  maxBounds: [[-76.2, 39.55], [-74.7, 40.35]],
+  attributionControl: { compact: true },
+  canvasContextAttributes: { antialias: true }
+});
+map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-left');
+window.__delco3dMap = map; // handy for debugging in the console
+window.__delco3d = { get munis() { return munis; }, get incidents() { return incidents; } };
+
+function homeCamera() {
+  try {
+    const c = map.calculateCameraOptionsFromTo(
+      new maplibregl.LngLat(HOME_FROM.lng, HOME_FROM.lat), HOME_FROM.alt,
+      new maplibregl.LngLat(HOME_TO.lng, HOME_TO.lat), 10);
+    if (c && isFinite(c.zoom) && isFinite(c.pitch)) {
+      c.pitch = Math.min(c.pitch, 84);
+      return c;
+    }
+  } catch (e) { /* fall through */ }
+  return { ...HOME_FALLBACK };
+}
+
+// Swap to the backup imagery if USGS tiles keep failing.
+let imageryErrors = 0, imageryFallback = false, pemaErrors = 0, pemaFallback = false;
+map.on('error', (e) => {
+  if (e && e.sourceId === 'pema' && !pemaFallback && ++pemaErrors >= 8) {
+    pemaFallback = true;
+    setTimeout(() => {
+      try {
+        if (map.getLayer('imagery-hires')) map.removeLayer('imagery-hires');
+        if (map.getSource('pema')) map.removeSource('pema');
+        map.addSource('pema', { type: 'raster', tiles: IMAGERY.pema.exportTiles, tileSize: 256, minzoom: IMAGERY.pema.minzoom, maxzoom: IMAGERY.pema.maxzoom, attribution: IMAGERY.pema.attribution, bounds: [-75.65, 39.80, -75.18, 40.08] });
+        map.addLayer({ id: 'imagery-hires', type: 'raster', source: 'pema', minzoom: 12.5, paint: { 'raster-opacity': ['interpolate', ['linear'], ['zoom'], 12.5, 0, 13.5, 1], 'raster-contrast': 0.06 } }, 'hillshade');
+      } catch (err) { console.warn('Close-up imagery fallback failed', err); }
+    }, 0);
+    console.warn('PEMA cached tiles unavailable; drawing PEMA imagery on demand instead.');
+  }
+  if (e && e.sourceId === 'imagery' && !imageryFallback && ++imageryErrors >= 6) {
+    imageryFallback = true;
+    // Rebuild the imagery source with the backup tiles (safer than swapping tiles mid-render).
+    setTimeout(() => {
+      try {
+        if (map.getLayer('imagery')) map.removeLayer('imagery');
+        if (map.getSource('imagery')) map.removeSource('imagery');
+        map.addSource('imagery', { type: 'raster', tiles: IMAGERY.eox.tiles, tileSize: 256, maxzoom: IMAGERY.eox.maxzoom, attribution: IMAGERY.eox.attribution });
+        map.addLayer({ id: 'imagery', type: 'raster', source: 'imagery', paint: { 'raster-saturation': -0.08, 'raster-contrast': 0.08 } }, map.getLayer('imagery-hires') ? 'imagery-hires' : 'hillshade');
+      } catch (err) { console.warn('Imagery fallback failed', err); }
+    }, 0);
+    console.warn('USGS imagery unavailable; switched to Sentinel-2 cloudless.');
+  }
+});
+
+// Hide marker labels when zoomed far out.
+// Only label pins near the middle of the view so the horizon doesn't fill up with names.
+let labelFrame = 0;
+function updateFar() {
+  if (labelFrame) return;
+  labelFrame = requestAnimationFrame(() => {
+    labelFrame = 0;
+    const z = map.getZoom();
+    document.body.classList.toggle('far', z < 11.2);
+    const c = map.getCenter();
+    const limit = 5000 * Math.pow(2, 13.6 - z) * (map.getPitch() > 55 ? 1 : 2.5);
+    [...landmarkMarkers, ...venueMarkers].forEach(m => m.getElement().classList.toggle('nolabel', c.distanceTo(m.getLngLat()) > limit));
+  });
+}
+map.on('move', updateFar);
+
+// ------------------------------------------------------------------
+// Municipal boundaries
+// ------------------------------------------------------------------
+let munis = [];      // [{ name, area, centroid, bounds, feature }]
+let hoveredId = null;
+
+async function loadBoundaries() {
+  for (const src of BOUNDARY_SOURCES) {
+    try {
+      const res = await fetch(src.url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const gj = await res.json();
+      const feats = (gj.features || []).filter(f => f.geometry && /Polygon/.test(f.geometry.type));
+      if (feats.length >= 20) return { feats, label: src.label };
+      throw new Error('only ' + feats.length + ' features');
+    } catch (e) {
+      console.warn('Boundary source failed:', src.label, e.message);
+    }
+  }
+  return null;
+}
+
+function addBoundaries(result) {
+  const feats = result.feats.map((f, i) => {
+    const name = muniName(f.properties || {});
+    return { type: 'Feature', id: i, geometry: f.geometry, properties: { name, area: muniArea(f.properties || {}) } };
+  });
+  munis = feats.map(f => ({ id: f.id, name: f.properties.name, area: f.properties.area, centroid: featureCentroid(f), bounds: featureBounds(f), key: normTown(f.properties.name) }));
+  const labels = { type: 'FeatureCollection', features: munis.filter(m => m.centroid).map(m => ({ type: 'Feature', properties: { name: m.name }, geometry: { type: 'Point', coordinates: m.centroid } })) };
+
+  map.addSource('munis', { type: 'geojson', data: { type: 'FeatureCollection', features: feats }, attribution: result.label === 'US Census' ? 'Boundaries: US Census TIGER' : 'Boundaries: PennDOT' });
+  map.addSource('county', { type: 'geojson', data: countyOutline(feats) });
+  map.addSource('muni-labels', { type: 'geojson', data: labels });
+
+  const before = map.getLayer('buildings') ? 'buildings' : undefined;
+  map.addLayer({ id: 'muni-fill', type: 'fill', source: 'munis',
+    paint: { 'fill-color': '#F0C46B', 'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.22, 0.0] } }, before);
+  map.addLayer({ id: 'muni-line', type: 'line', source: 'munis',
+    paint: { 'line-color': '#ffffff', 'line-opacity': 0.75, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 0.8, 14, 2] } }, before);
+  map.addLayer({ id: 'county-glow', type: 'line', source: 'county',
+    paint: { 'line-color': '#F0C46B', 'line-opacity': 0.35, 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 6, 14, 14], 'line-blur': 6 } }, before);
+  map.addLayer({ id: 'county-line', type: 'line', source: 'county',
+    paint: { 'line-color': '#F0C46B', 'line-width': ['interpolate', ['linear'], ['zoom'], 9, 2, 14, 4] } }, before);
+  map.addLayer({ id: 'muni-labels', type: 'symbol', source: 'muni-labels', maxzoom: 14.5,
+    layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': ['interpolate', ['linear'], ['zoom'], 9, 10, 13, 15], 'text-max-width': 8, 'text-allow-overlap': false },
+    paint: { 'text-color': '#ffffff', 'text-halo-color': 'rgba(20,18,28,0.9)', 'text-halo-width': 1.6 } });
+
+  const tip = $('tip');
+  map.on('mousemove', 'muni-fill', (e) => {
+    if (!e.features.length) return;
+    const id = e.features[0].id;
+    if (hoveredId !== null && hoveredId !== id) map.setFeatureState({ source: 'munis', id: hoveredId }, { hover: false });
+    hoveredId = id;
+    map.setFeatureState({ source: 'munis', id }, { hover: true });
+    map.getCanvas().style.cursor = 'pointer';
+    tip.textContent = e.features[0].properties.name;
+    tip.style.display = 'block';
+    tip.style.left = (e.point.x + 14) + 'px';
+    tip.style.top = (e.point.y + 14) + 'px';
+  });
+  map.on('mouseleave', 'muni-fill', () => {
+    if (hoveredId !== null) map.setFeatureState({ source: 'munis', id: hoveredId }, { hover: false });
+    hoveredId = null; tip.style.display = 'none'; map.getCanvas().style.cursor = '';
+  });
+  map.on('click', 'muni-fill', (e) => {
+    if (e.originalEvent.__markerClick) return;
+    const m = munis.find(x => x.id === e.features[0].id);
+    if (!m) return;
+    const count = incidents.filter(i => normTown(i.town) === m.key).length;
+    const html = `<div class="pop-k">Municipality</div><div class="pop-h">${esc(m.name)}</div>
+      <div class="pop-r">${m.area ? m.area.toFixed(2) + ' sq mi<br>' : ''}${count} dispatch incident${count === 1 ? '' : 's'} ${IS_LIVE_SITE ? 'in the last 24 hours' : 'in the sample'}</div>
+      <button class="btn pop-btn" data-fly="${m.id}">Fly here</button>`;
+    const pop = new maplibregl.Popup({ offset: 8 }).setLngLat(e.lngLat).setHTML(html).addTo(map);
+    pop.getElement().querySelector('[data-fly]').addEventListener('click', () => { pop.remove(); flyToMuni(m); });
+  });
+
+  placeVenues(); // venues need municipality centroids
+}
+
+function flyToMuni(m) {
+  stopTour();
+  const cam = map.cameraForBounds(m.bounds, { padding: 80 });
+  map.flyTo({ ...cam, zoom: Math.min((cam && cam.zoom) || 13, 15), pitch: 62, bearing: map.getBearing(), duration: 2800, essential: true });
+}
+
+// ------------------------------------------------------------------
+// Markers: landmarks, venues, incidents
+// ------------------------------------------------------------------
+const landmarkMarkers = [], venueMarkers = [];
+let incidentMarkers = [], incidents = [], venues = [];
+
+function markerEl(cls, name) {
+  const el = document.createElement('div');
+  el.className = 'mk lm ' + cls;
+  el.innerHTML = `<span class="pin"></span><span class="name">${esc(name)}</span>`;
+  el.addEventListener('click', (ev) => { ev.stopPropagation(); });
+  return el;
+}
+
+function addLandmarks() {
+  LANDMARKS.forEach(l => {
+    const el = markerEl('landmark', l.name);
+    const mk = new maplibregl.Marker({ element: el, anchor: 'left', offset: [-6, 0] })
+      .setLngLat([l.lng, l.lat])
+      .setPopup(new maplibregl.Popup({ offset: 14 }).setHTML(`<div class="pop-k">Landmark</div><div class="pop-h">${esc(l.name)}</div><div class="pop-r">${esc(l.blurb)}</div>`))
+      .addTo(map);
+    landmarkMarkers.push(mk);
+  });
+}
+
+async function loadVenues() {
+  if (!IS_LIVE_SITE) return;
+  try {
+    const res = await fetch('/api/venues', { credentials: 'same-origin' });
+    if (!res.ok) return;
+    venues = (await res.json()).venues || [];
+    placeVenues();
+  } catch (e) { console.warn('Venues unavailable', e); }
+}
+
+// Venues only store a town, so they're placed near the town's center with a small offset.
+function placeVenues() {
+  if (!venues.length || !munis.length || venueMarkers.length) return;
+  venues.forEach((v, idx) => {
+    const m = munis.find(x => x.key === normTown(v.town));
+    if (!m || !m.centroid) return;
+    const ang = (idx * 137.5) * Math.PI / 180, r = 0.0025 + (idx % 4) * 0.0012;
+    const pos = [m.centroid[0] + Math.cos(ang) * r, m.centroid[1] + Math.sin(ang) * r * 0.77];
+    const links = [v.website_url && `<a href="${esc(v.website_url)}" target="_blank" rel="noopener">Website</a>`, v.instagram_url && `<a href="${esc(v.instagram_url)}" target="_blank" rel="noopener">Instagram</a>`].filter(Boolean).join(' · ');
+    const mk = new maplibregl.Marker({ element: markerEl('venue', v.name), anchor: 'left', offset: [-5, 0] })
+      .setLngLat(pos)
+      .setPopup(new maplibregl.Popup({ offset: 14 }).setHTML(`<div class="pop-k">${esc(v.category || 'Venue')}</div><div class="pop-h">${esc(v.name)}</div><div class="pop-r">${esc(v.town)}${v.blurb ? '<br>' + esc(v.blurb) : ''}${links ? '<br>' + links : ''}<br><em>Pin shows the town, not the exact address.</em></div>`))
+      .addTo(map);
+    if (!$('t-landmarks').checked) mk.getElement().style.display = 'none';
+    venueMarkers.push(mk);
+  });
+  updateFar();
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + ' min ago';
+  const h = Math.round(mins / 60);
+  return h + ' hr' + (h === 1 ? '' : 's') + ' ago';
+}
+
+function renderIncidents() {
+  incidentMarkers.forEach(m => m.remove());
+  incidentMarkers = [];
+  const show = $('t-incidents').checked;
+  incidents.filter(i => i.latitude && i.longitude).slice(0, 400).forEach(i => {
+    const svc = (i.service || 'Other').toLowerCase();
+    const el = document.createElement('div');
+    el.className = 'mk inc inc-' + (svc === 'ems' || svc === 'fire' ? svc : 'other');
+    el.title = i.incident_type || '';
+    el.addEventListener('click', (ev) => ev.stopPropagation());
+    const when = i.occurred_at ? `${new Date(i.occurred_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · ${timeAgo(i.occurred_at)}` : 'Sample record';
+    const mk = new maplibregl.Marker({ element: el })
+      .setLngLat([i.longitude, i.latitude])
+      .setPopup(new maplibregl.Popup({ offset: 12 }).setHTML(
+        `<div class="pop-k">${esc(i.service || 'Dispatch')} · ${esc(i.status || '')}</div><div class="pop-h">${esc(i.incident_type)}</div>
+         <div class="pop-r">${esc(i.location || '')}${i.location ? '<br>' : ''}${esc(i.town || '')}<br>${esc(i.unit || '')}${i.unit ? '<br>' : ''}${esc(when)}</div>`))
+      .addTo(map);
+    if (!show) el.style.display = 'none';
+    incidentMarkers.push(mk);
+  });
+}
+
+async function loadIncidents() {
+  if (!IS_LIVE_SITE) {
+    incidents = window.DELCO3D_SAMPLE_INCIDENTS || [];
+    renderIncidents();
+    setStatus(`Preview mode: ${incidents.length} sample dispatch records. Live incidents appear once this page is on delcospot.com.`, true);
+    return;
+  }
+  try {
+    const res = await fetch('/api/incidents', { credentials: 'same-origin' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    incidents = data.incidents || [];
+    renderIncidents();
+    const mapped = incidents.filter(i => i.latitude && i.longitude).length;
+    setStatus(`Live: ${mapped} mapped incident${mapped === 1 ? '' : 's'} ${data.access === 'full_history' ? '(latest 500)' : 'in the last 24 hours'}. Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`, false);
+  } catch (e) {
+    setStatus('Live dispatch feed is unavailable right now.', true);
+  }
+}
+
+// ------------------------------------------------------------------
+// Tour
+// ------------------------------------------------------------------
+let tourRunning = false, tourToken = 0;
+
+function showCaption(i) {
+  const s = TOUR[i];
+  $('cap-step').textContent = `Stop ${i + 1} of ${TOUR.length}`;
+  $('cap-title').textContent = s.title;
+  $('cap-body').textContent = s.body;
+  $('cap-dots').innerHTML = TOUR.map((_, k) => `<span class="${k <= i ? 'on' : ''}"></span>`).join('');
+  $('caption').classList.add('show');
+}
+
+function flyAndWait(opts, token) {
+  return new Promise(resolve => {
+    const done = () => { map.off('moveend', done); resolve(token === tourToken); };
+    map.on('moveend', done);
+    map.flyTo({ ...opts, essential: true });
+  });
+}
+
+async function startTour() {
+  const token = ++tourToken;
+  tourRunning = true;
+  $('tour-btn').textContent = '■ Stop tour';
+  $('tour-btn').classList.add('running');
+  document.querySelectorAll('.maplibregl-popup').forEach(p => p.remove());
+  for (let i = 0; i < TOUR.length; i++) {
+    const s = TOUR[i];
+    const cam = s.camera === 'home' ? homeCamera() : s.camera;
+    showCaption(i);
+    const ok = await flyAndWait({ ...cam, duration: i === 0 ? 2500 : 5500, curve: 1.3 }, token);
+    if (!ok || token !== tourToken) return;
+    // slow drift while holding on each stop
+    map.easeTo({ bearing: map.getBearing() + 14, duration: s.hold, easing: t => t });
+    await sleep(s.hold);
+    if (token !== tourToken) return;
+  }
+  stopTour();
+}
+
+function stopTour() {
+  if (!tourRunning) return;
+  tourRunning = false;
+  tourToken++;
+  map.stop();
+  $('tour-btn').textContent = '▶ Fly the county';
+  $('tour-btn').classList.remove('running');
+  $('caption').classList.remove('show');
+}
+
+// Any hands-on interaction ends the tour.
+['mousedown', 'touchstart', 'wheel'].forEach(ev => map.getCanvasContainer().addEventListener(ev, () => { if (tourRunning) stopTour(); }, { passive: true }));
+
+// ------------------------------------------------------------------
+// UI wiring
+// ------------------------------------------------------------------
+$('tour-btn').addEventListener('click', () => tourRunning ? stopTour() : startTour());
+$('home-btn').addEventListener('click', () => { stopTour(); map.flyTo({ ...homeCamera(), duration: 3000, essential: true }); });
+$('panel-toggle').addEventListener('click', () => $('panel').classList.toggle('collapsed'));
+
+function setVis(ids, on) { ids.forEach(id => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none')); }
+$('t-borders').addEventListener('change', e => setVis(['muni-fill', 'muni-line', 'county-glow', 'county-line', 'muni-labels'], e.target.checked));
+$('t-buildings').addEventListener('change', e => setVis(['buildings'], e.target.checked));
+$('t-labels').addEventListener('change', e => setVis(['road-names', 'place-names'], e.target.checked));
+$('t-incidents').addEventListener('change', e => incidentMarkers.forEach(m => m.getElement().style.display = e.target.checked ? '' : 'none'));
+$('t-landmarks').addEventListener('change', e => [...landmarkMarkers, ...venueMarkers].forEach(m => m.getElement().style.display = e.target.checked ? '' : 'none'));
+// Terrain height: the slider sets the height for the county-wide view. With
+// "Flatten when zoomed in" on, it eases toward true height (about 1.2×) as you
+// zoom to street level, so photos and buildings don't get stretched over fake hills.
+function effectiveExaggeration() {
+  const v = Number($('exag').value);
+  if (!$('t-autoflat').checked) return v;
+  const t = Math.min(1, Math.max(0, (map.getZoom() - 11.5) / 3.5));
+  const near = Math.min(v, 1.2);
+  return +(v + (near - v) * t).toFixed(2);
+}
+let lastExag = null;
+function applyExaggeration() {
+  const ex = effectiveExaggeration();
+  $('exag-now').textContent = $('t-autoflat').checked ? `Right now: ${ex.toFixed(1)}×` : '';
+  if (ex === lastExag) return;
+  lastExag = ex;
+  if (map.terrain && typeof map.terrain.exaggeration === 'number') {
+    map.terrain.exaggeration = ex;   // cheap per-frame update
+    map.triggerRepaint();
+  } else {
+    map.setTerrain({ source: 'dem', exaggeration: ex });
+  }
+}
+$('exag').addEventListener('input', e => { $('exag-val').textContent = e.target.value + '×'; applyExaggeration(); });
+$('t-autoflat').addEventListener('change', applyExaggeration);
+map.on('zoom', applyExaggeration);
+
+// ------------------------------------------------------------------
+// Boot
+// ------------------------------------------------------------------
+let loaderHidden = false;
+function hideLoader() { if (loaderHidden) return; loaderHidden = true; $('loader').classList.add('hide'); }
+setTimeout(hideLoader, 9000); // never leave people stuck behind the loader
+
+// Boot on style.load (not 'load') so one slow or blocked tile service can't stall the page.
+let booted = false;
+map.on('style.load', async () => {
+  if (booted) return; booted = true;
+  map.jumpTo(homeCamera());
+  applyExaggeration();
+  addLandmarks();
+  updateFar();
+  loadIncidents();
+  loadVenues();
+  if (IS_LIVE_SITE) setInterval(loadIncidents, 120000);
+  map.once('idle', hideLoader);
+  $('loader-msg').textContent = 'Drawing municipal boundaries…';
+  const b = await loadBoundaries();
+  if (b) addBoundaries(b);
+  else console.warn('No boundary source responded; borders layer hidden.');
+});
+
+})();
+</script>
+</body>
+</html>
