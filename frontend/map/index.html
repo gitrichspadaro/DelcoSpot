@@ -58,7 +58,6 @@ button { font-family: inherit; }
 #panel h2 { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--text-soft); margin: 14px 0 8px; font-weight: 700; }
 #panel h2:first-child { margin-top: 0; }
 #panel .collapsible h2:first-child { margin-top: 14px; }
-.lm.nolabel .name { display: none; }
 .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .btn {
   appearance: none; border: 1px solid var(--glass-border); border-radius: 10px;
@@ -113,18 +112,6 @@ button { font-family: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* markers */
-.mk { cursor: pointer; }
-.inc { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; position: relative; box-shadow: 0 0 0 2px rgba(0,0,0,.25); }
-.inc::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid currentColor; animation: pulse 2s ease-out infinite; }
-.inc-ems { background: var(--ems); color: var(--ems); }
-.inc-fire { background: var(--fire); color: var(--fire); }
-.inc-other { background: var(--other); color: var(--other); }
-@keyframes pulse { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(3.2); opacity: 0; } }
-.lm { display: flex; align-items: center; gap: 6px; }
-.lm .pin { width: 12px; height: 12px; border-radius: 50%; background: var(--moss); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.4); flex-shrink: 0; }
-.lm.venue .pin { background: var(--venue); width: 10px; height: 10px; }
-.lm .name { font-size: 12px; font-weight: 700; color: #fff; padding: 3px 8px; border-radius: 6px; background: rgba(20,18,28,.72); border: 1px solid rgba(255,255,255,.15); white-space: nowrap; }
-.far .lm .name { display: none; }
 
 /* popups */
 .maplibregl-popup-content { background: var(--glass-strong); color: var(--text); border-radius: 12px; border: 1px solid var(--glass-border); padding: 12px 14px; font-family: var(--font-sans); box-shadow: 0 10px 30px rgba(0,0,0,.4); backdrop-filter: blur(12px); max-width: 280px; }
@@ -475,21 +462,7 @@ map.on('error', (e) => {
   }
 });
 
-// Hide marker labels when zoomed far out.
-// Only label pins near the middle of the view so the horizon doesn't fill up with names.
-let labelFrame = 0;
-function updateFar() {
-  if (labelFrame) return;
-  labelFrame = requestAnimationFrame(() => {
-    labelFrame = 0;
-    const z = map.getZoom();
-    document.body.classList.toggle('far', z < 11.2);
-    const c = map.getCenter();
-    const limit = 5000 * Math.pow(2, 13.6 - z) * (map.getPitch() > 55 ? 1 : 2.5);
-    [...landmarkMarkers, ...venueMarkers].forEach(m => m.getElement().classList.toggle('nolabel', c.distanceTo(m.getLngLat()) > limit));
-  });
-}
-map.on('move', updateFar);
+
 
 // ------------------------------------------------------------------
 // Municipal boundaries
@@ -556,7 +529,7 @@ function addBoundaries(result) {
     hoveredId = null; tip.style.display = 'none'; map.getCanvas().style.cursor = '';
   });
   map.on('click', 'muni-fill', (e) => {
-    if (e.originalEvent.__markerClick) return;
+    if (map.queryRenderedFeatures(e.point, { layers: PIN_LAYERS.filter(id => map.getLayer(id)) }).length) return;
     const m = munis.find(x => x.id === e.features[0].id);
     if (!m) return;
     const count = incidents.filter(i => normTown(i.town) === m.key).length;
@@ -577,28 +550,63 @@ function flyToMuni(m) {
 }
 
 // ------------------------------------------------------------------
-// Markers: landmarks, venues, incidents
+// Pins: landmarks, venues, incidents
+// Drawn as map layers (not floating HTML elements) so they stay locked to
+// the ground at every zoom, tilt and terrain height.
 // ------------------------------------------------------------------
-const landmarkMarkers = [], venueMarkers = [];
-let incidentMarkers = [], incidents = [], venues = [];
+let incidents = [], venues = [], venuesPlaced = false, pinPopup = null;
+let landmarkFeatures = [], venueFeatures = [];
+const emptyFC = () => ({ type: 'FeatureCollection', features: [] });
+const SVC_COLOR = ['match', ['get', 'svc'], 'ems', '#F0C46B', 'fire', '#F2575F', '#8FB8E8'];
+const PIN_LAYERS = ['incidents-halo', 'incidents-dot', 'places-dot', 'places-label'];
 
-function markerEl(cls, name) {
-  const el = document.createElement('div');
-  el.className = 'mk lm ' + cls;
-  el.innerHTML = `<span class="pin"></span><span class="name">${esc(name)}</span>`;
-  el.addEventListener('click', (ev) => { ev.stopPropagation(); });
-  return el;
+function ensurePinLayers() {
+  if (map.getSource('places-src')) return;
+  map.addSource('incidents-src', { type: 'geojson', data: emptyFC() });
+  map.addSource('places-src', { type: 'geojson', data: emptyFC() });
+  map.addLayer({ id: 'incidents-halo', type: 'circle', source: 'incidents-src', paint: {
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 8, 15, 20], 'circle-color': SVC_COLOR, 'circle-opacity': 0.28,
+    'circle-stroke-color': SVC_COLOR, 'circle-stroke-width': 1.5, 'circle-stroke-opacity': 0.75 } });
+  map.addLayer({ id: 'incidents-dot', type: 'circle', source: 'incidents-src', paint: {
+    'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 3.5, 15, 7], 'circle-color': SVC_COLOR,
+    'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } });
+  map.addLayer({ id: 'places-dot', type: 'circle', source: 'places-src', paint: {
+    'circle-radius': ['case', ['==', ['get', 'kind'], 'venue'], 5, 6.5],
+    'circle-color': ['case', ['==', ['get', 'kind'], 'venue'], '#C89CF2', '#6FD3A0'],
+    'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 } });
+  map.addLayer({ id: 'places-label', type: 'symbol', source: 'places-src', minzoom: 9.5,
+    layout: { 'text-field': ['get', 'name'], 'text-font': ['Noto Sans Bold'], 'text-size': 12, 'text-anchor': 'left', 'text-offset': [0.9, 0], 'text-max-width': 14,
+      'symbol-sort-key': ['case', ['==', ['get', 'kind'], 'venue'], 2, 1] },
+    paint: { 'text-color': '#ffffff', 'text-halo-color': 'rgba(20,18,28,0.92)', 'text-halo-width': 2 } });
+
+  // Click targets: the incident halo (bigger than the dot), the place dot and its label.
+  ['incidents-halo', 'places-dot', 'places-label'].forEach(id => {
+    map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
+    map.on('click', id, (e) => {
+      const f = e.features && e.features[0];
+      if (!f) return;
+      if (pinPopup) pinPopup.remove();
+      pinPopup = new maplibregl.Popup({ offset: 14, maxWidth: '280px' }).setLngLat(f.geometry.coordinates).setHTML(f.properties.html).addTo(map);
+    });
+  });
+  applyPinVisibility();
+}
+
+function applyPinVisibility() {
+  setVis(['incidents-halo', 'incidents-dot'], $('t-incidents').checked);
+  setVis(['places-dot', 'places-label'], $('t-landmarks').checked);
+}
+
+function refreshPlaces() {
+  const src = map.getSource('places-src');
+  if (src) src.setData({ type: 'FeatureCollection', features: [...landmarkFeatures, ...venueFeatures] });
 }
 
 function addLandmarks() {
-  LANDMARKS.forEach(l => {
-    const el = markerEl('landmark', l.name);
-    const mk = new maplibregl.Marker({ element: el, anchor: 'left', offset: [-6, 0] })
-      .setLngLat([l.lng, l.lat])
-      .setPopup(new maplibregl.Popup({ offset: 14 }).setHTML(`<div class="pop-k">Landmark</div><div class="pop-h">${esc(l.name)}</div><div class="pop-r">${esc(l.blurb)}</div>`))
-      .addTo(map);
-    landmarkMarkers.push(mk);
-  });
+  landmarkFeatures = LANDMARKS.map(l => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [l.lng, l.lat] },
+    properties: { kind: 'landmark', name: l.name, html: `<div class="pop-k">Landmark</div><div class="pop-h">${esc(l.name)}</div><div class="pop-r">${esc(l.blurb)}</div>` } }));
+  refreshPlaces();
 }
 
 async function loadVenues() {
@@ -613,21 +621,19 @@ async function loadVenues() {
 
 // Venues only store a town, so they're placed near the town's center with a small offset.
 function placeVenues() {
-  if (!venues.length || !munis.length || venueMarkers.length) return;
+  if (!venues.length || !munis.length || venuesPlaced) return;
+  venuesPlaced = true;
+  venueFeatures = [];
   venues.forEach((v, idx) => {
     const m = munis.find(x => x.key === normTown(v.town));
     if (!m || !m.centroid) return;
     const ang = (idx * 137.5) * Math.PI / 180, r = 0.0025 + (idx % 4) * 0.0012;
     const pos = [m.centroid[0] + Math.cos(ang) * r, m.centroid[1] + Math.sin(ang) * r * 0.77];
     const links = [v.website_url && `<a href="${esc(v.website_url)}" target="_blank" rel="noopener">Website</a>`, v.instagram_url && `<a href="${esc(v.instagram_url)}" target="_blank" rel="noopener">Instagram</a>`].filter(Boolean).join(' · ');
-    const mk = new maplibregl.Marker({ element: markerEl('venue', v.name), anchor: 'left', offset: [-5, 0] })
-      .setLngLat(pos)
-      .setPopup(new maplibregl.Popup({ offset: 14 }).setHTML(`<div class="pop-k">${esc(v.category || 'Venue')}</div><div class="pop-h">${esc(v.name)}</div><div class="pop-r">${esc(v.town)}${v.blurb ? '<br>' + esc(v.blurb) : ''}${links ? '<br>' + links : ''}<br><em>Pin shows the town, not the exact address.</em></div>`))
-      .addTo(map);
-    if (!$('t-landmarks').checked) mk.getElement().style.display = 'none';
-    venueMarkers.push(mk);
+    venueFeatures.push({ type: 'Feature', geometry: { type: 'Point', coordinates: pos },
+      properties: { kind: 'venue', name: v.name, html: `<div class="pop-k">${esc(v.category || 'Venue')}</div><div class="pop-h">${esc(v.name)}</div><div class="pop-r">${esc(v.town)}${v.blurb ? '<br>' + esc(v.blurb) : ''}${links ? '<br>' + links : ''}<br><em>Pin shows the town, not the exact address.</em></div>` } });
   });
-  updateFar();
+  refreshPlaces();
 }
 
 function timeAgo(iso) {
@@ -640,25 +646,16 @@ function timeAgo(iso) {
 }
 
 function renderIncidents() {
-  incidentMarkers.forEach(m => m.remove());
-  incidentMarkers = [];
-  const show = $('t-incidents').checked;
-  incidents.filter(i => i.latitude && i.longitude).slice(0, 400).forEach(i => {
+  const feats = incidents.filter(i => i.latitude && i.longitude).slice(0, 400).map(i => {
     const svc = (i.service || 'Other').toLowerCase();
-    const el = document.createElement('div');
-    el.className = 'mk inc inc-' + (svc === 'ems' || svc === 'fire' ? svc : 'other');
-    el.title = i.incident_type || '';
-    el.addEventListener('click', (ev) => ev.stopPropagation());
     const when = i.occurred_at ? `${new Date(i.occurred_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · ${timeAgo(i.occurred_at)}` : 'Sample record';
-    const mk = new maplibregl.Marker({ element: el })
-      .setLngLat([i.longitude, i.latitude])
-      .setPopup(new maplibregl.Popup({ offset: 12 }).setHTML(
-        `<div class="pop-k">${esc(i.service || 'Dispatch')} · ${esc(i.status || '')}</div><div class="pop-h">${esc(i.incident_type)}</div>
-         <div class="pop-r">${esc(i.location || '')}${i.location ? '<br>' : ''}${esc(i.town || '')}<br>${esc(i.unit || '')}${i.unit ? '<br>' : ''}${esc(when)}</div>`))
-      .addTo(map);
-    if (!show) el.style.display = 'none';
-    incidentMarkers.push(mk);
+    return { type: 'Feature', geometry: { type: 'Point', coordinates: [i.longitude, i.latitude] },
+      properties: { svc: svc === 'ems' || svc === 'fire' ? svc : 'other',
+        html: `<div class="pop-k">${esc(i.service || 'Dispatch')} · ${esc(i.status || '')}</div><div class="pop-h">${esc(i.incident_type)}</div>
+         <div class="pop-r">${esc(i.location || '')}${i.location ? '<br>' : ''}${esc(i.town || '')}<br>${esc(i.unit || '')}${i.unit ? '<br>' : ''}${esc(when)}</div>` } };
   });
+  const src = map.getSource('incidents-src');
+  if (src) src.setData({ type: 'FeatureCollection', features: feats });
 }
 
 async function loadIncidents() {
@@ -747,8 +744,8 @@ function setVis(ids, on) { ids.forEach(id => map.getLayer(id) && map.setLayoutPr
 $('t-borders').addEventListener('change', e => setVis(['muni-fill', 'muni-line', 'county-glow', 'county-line', 'muni-labels'], e.target.checked));
 $('t-buildings').addEventListener('change', e => setVis(['buildings'], e.target.checked));
 $('t-labels').addEventListener('change', e => setVis(['road-names', 'place-names'], e.target.checked));
-$('t-incidents').addEventListener('change', e => incidentMarkers.forEach(m => m.getElement().style.display = e.target.checked ? '' : 'none'));
-$('t-landmarks').addEventListener('change', e => [...landmarkMarkers, ...venueMarkers].forEach(m => m.getElement().style.display = e.target.checked ? '' : 'none'));
+$('t-incidents').addEventListener('change', applyPinVisibility);
+$('t-landmarks').addEventListener('change', applyPinVisibility);
 // Terrain height: the slider sets the height for the county-wide view. With
 // "Flatten when zoomed in" on, it eases toward true height (about 1.2×) as you
 // zoom to street level, so photos and buildings don't get stretched over fake hills.
@@ -759,22 +756,21 @@ function effectiveExaggeration() {
   const near = Math.min(v, 1.2);
   return +(v + (near - v) * t).toFixed(2);
 }
-let lastExag = null;
+let lastExag = null, exagTimer = 0;
 function applyExaggeration() {
-  const ex = effectiveExaggeration();
-  $('exag-now').textContent = $('t-autoflat').checked ? `Right now: ${ex.toFixed(1)}×` : '';
+  if (!booted) return;
+  // Quarter-step changes only, so terrain never jumps by much and is rebuilt only a handful of times per zoom.
+  const ex = Math.round(effectiveExaggeration() * 4) / 4;
+  $('exag-now').textContent = $('t-autoflat').checked ? `Right now: ${ex.toFixed(2).replace(/0$/, '')}×` : '';
   if (ex === lastExag) return;
   lastExag = ex;
-  if (map.terrain && typeof map.terrain.exaggeration === 'number') {
-    map.terrain.exaggeration = ex;   // cheap per-frame update
-    map.triggerRepaint();
-  } else {
-    map.setTerrain({ source: 'dem', exaggeration: ex });
-  }
+  map.setTerrain({ source: 'dem', exaggeration: ex });
 }
 $('exag').addEventListener('input', e => { $('exag-val').textContent = e.target.value + '×'; applyExaggeration(); });
 $('t-autoflat').addEventListener('change', applyExaggeration);
-map.on('zoom', applyExaggeration);
+// While zooming, re-check a few times a second; always settle when the zoom ends.
+map.on('zoom', () => { if (!exagTimer) exagTimer = setTimeout(() => { exagTimer = 0; applyExaggeration(); }, 250); });
+map.on('zoomend', applyExaggeration);
 
 // ------------------------------------------------------------------
 // Boot
@@ -789,8 +785,8 @@ map.on('style.load', async () => {
   if (booted) return; booted = true;
   map.jumpTo(homeCamera());
   applyExaggeration();
+  ensurePinLayers();
   addLandmarks();
-  updateFar();
   loadIncidents();
   loadVenues();
   if (IS_LIVE_SITE) setInterval(loadIncidents, 120000);
