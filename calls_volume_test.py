@@ -15,15 +15,24 @@ import time
 import urllib.error
 import urllib.request
 from collections import Counter
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta, timezone
 
 import broadcastify_auth as bcfy
 
 DAYS = 7
 LAG_SECONDS = 15 * 60          # archives are not guaranteed until 15 minutes after receipt
 PAUSE_SECONDS = 0.3            # stay well under the 5 requests/second limit
-LOCAL_TZ = ZoneInfo("America/New_York")
+
+# Use New York time when the system has timezone data (Render does). Windows Python often
+# doesn't, so fall back to a fixed UTC-5 offset. That's off by one hour before 1 Nov (DST), which
+# only moves a few calls across midnight in the per-day counts.
+try:
+    from zoneinfo import ZoneInfo
+    LOCAL_TZ = ZoneInfo("America/New_York")
+    TZ_LABEL = "America/New_York"
+except Exception:
+    LOCAL_TZ = timezone(timedelta(hours=-5))
+    TZ_LABEL = "fixed UTC-5"
 
 
 def fetch(group_id, start, end):
@@ -87,7 +96,7 @@ def summarize(group_id, calls, requests, failures, windows):
     print(f"unique calls:      {len(calls)}")
     print(f"total airtime:     {total_seconds} s ({total_seconds / 60:.1f} min)")
     print(f"average duration:  {total_seconds / len(calls):.1f} s")
-    print(f"calls per day ({LOCAL_TZ.key}):")
+    print(f"calls per day ({TZ_LABEL}):")
     for day in sorted(per_day, key=lambda d: datetime.strptime(d, "%a %m/%d").replace(year=2026)):
         print(f"  {day}: {per_day[day]}")
 
