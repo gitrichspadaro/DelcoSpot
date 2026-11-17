@@ -200,6 +200,47 @@ def create_app():
         status_code = 200 if db_ok else 503
         return jsonify({"status": "healthy" if db_ok else "database unreachable"}), status_code
 
+    @app.get("/api/health")
+    def api_health():
+        # Detailed health for an uptime monitor or a quick look in a browser.
+        # /healthz above stays as Render's own check (database only), so a
+        # quiet dispatch feed can never make Render restart the service.
+        # Returns 503 when the database is down or no incident has been
+        # imported for HEALTH_FEED_STALE_HOURS (default 6). No user data here.
+        from datetime import datetime, timedelta, timezone
+        stale_hours = float(os.environ.get("HEALTH_FEED_STALE_HOURS", "6"))
+        now = datetime.now(timezone.utc).replace(tzinfo=None)  # timestamps are stored as naive UTC
+        out = {"checked_at": now.isoformat(timespec="seconds") + "Z", "database": "ok"}
+        try:
+            last_import = db.session.query(db.func.max(Incident.created_at)).scalar()
+            last_occurred = db.session.query(db.func.max(Incident.occurred_at)).scalar()
+            last_24h = Incident.query.filter(Incident.created_at >= now - timedelta(hours=24)).count()
+        except Exception:
+            db.session.rollback()
+            out.update({"status": "unhealthy", "database": "unreachable"})
+            return jsonify(out), 503
+
+        def _naive(dt):
+            return dt.astimezone(timezone.utc).replace(tzinfo=None) if dt is not None and dt.tzinfo else dt
+
+        last_import, last_occurred = _naive(last_import), _naive(last_occurred)
+        age_min = round((now - last_import).total_seconds() / 60) if last_import else None
+        stale = age_min is None or age_min > stale_hours * 60
+        out.update({
+            "status": "degraded" if stale else "healthy",
+            "dispatch_feed": {
+                "state": "stale" if stale else "fresh",
+                "last_import_at": last_import.isoformat(timespec="seconds") + "Z" if last_import else None,
+                "minutes_since_last_import": age_min,
+                "latest_incident_at": last_occurred.isoformat(timespec="seconds") + "Z" if last_occurred else None,
+                "incidents_imported_last_24h": last_24h,
+                "stale_after_hours": stale_hours,
+            },
+        })
+        resp = jsonify(out)
+        resp.headers["Cache-Control"] = "no-store"
+        return resp, (503 if stale else 200)
+
     @app.get("/debug-sentry")
     def trigger_error():
         # Temporary route to confirm Sentry is actually receiving errors.
