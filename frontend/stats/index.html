@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dispatch statistics · DelcoSpot</title>
+<meta name="description" content="Counts of Delaware County emergency calls by service, town, hour and day. Aggregates only.">
+<link rel="icon" href="/icons/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Source+Serif+4:wght@700&display=swap">
+<style>
+  :root { --paper:#FAF8F4; --surface:#FFFFFF; --ink:#26302B; --soft:#5A645E; --border:#E4DFD5;
+          --green:#1D6B32; --green-dark:#14432A; --fire:#A3231C; --ems:#174A82; --other:#7A7F7B; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font-family:'Public Sans',system-ui,sans-serif; line-height:1.5; }
+  a { color:var(--green); }
+  header { background:var(--surface); border-bottom:1px solid var(--border); }
+  .wrap { max-width:1100px; margin:0 auto; padding:0 20px; }
+  .top { display:flex; align-items:center; justify-content:space-between; padding:14px 0; gap:16px; flex-wrap:wrap; }
+  .brand { font-family:'Source Serif 4',Georgia,serif; font-weight:700; font-size:22px; color:var(--ink); text-decoration:none; }
+  h1 { font-family:'Source Serif 4',Georgia,serif; font-size:34px; margin:28px 0 6px; }
+  h2 { font-family:'Source Serif 4',Georgia,serif; font-size:22px; margin:0 0 12px; }
+  .lede { color:var(--soft); margin:0 0 22px; max-width:70ch; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .grid { display:grid; gap:18px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); margin-bottom:18px; }
+  .kpis { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin-bottom:18px; }
+  .kpi .n { font-size:34px; font-weight:700; line-height:1.1; }
+  .kpi .l { color:var(--soft); font-size:14px; }
+  .up { color:var(--fire); } .down { color:var(--green); }
+  .bars { display:flex; flex-direction:column; gap:9px; }
+  .row { display:grid; grid-template-columns:minmax(90px,140px) 1fr 44px; align-items:center; gap:10px; font-size:15px; }
+  .track { background:#F0ECE4; border-radius:6px; height:14px; overflow:hidden; }
+  .fill { height:100%; background:var(--green); border-radius:6px; }
+  .num { text-align:right; font-variant-numeric:tabular-nums; color:var(--soft); }
+  .hours { display:grid; grid-template-columns:repeat(24,1fr); gap:3px; align-items:end; height:140px; }
+  .hcol { background:var(--green); border-radius:3px 3px 0 0; min-height:2px; }
+  .hlabels { display:grid; grid-template-columns:repeat(4,1fr); font-size:12px; color:var(--soft); margin-top:6px; }
+  .days { display:grid; grid-template-columns:repeat(30,1fr); gap:3px; align-items:end; height:120px; }
+  .dcol { background:var(--green-dark); border-radius:3px 3px 0 0; min-height:2px; }
+  .muted { color:var(--soft); font-size:14px; }
+  .note { font-size:14px; color:var(--soft); margin-top:14px; }
+  .empty { color:var(--soft); font-style:italic; }
+  #status { color:var(--soft); padding:40px 0; }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  footer { color:var(--soft); font-size:14px; padding:30px 0 40px; }
+  @media (max-width:560px) { h1 { font-size:28px; } .row { grid-template-columns:100px 1fr 38px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <a class="brand" href="/">DelcoSpot</a>
+    <a href="/" style="font-weight:600;">Back to home</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Dispatch statistics</h1>
+  <p class="lede">Counts of emergency calls across Delaware County, from the public dispatch feed. These are totals only: no addresses, unit numbers or call details are shown. Groups with fewer than 5 calls are hidden.</p>
+
+  <div id="status" role="status">Loading statistics…</div>
+
+  <div id="content" hidden>
+    <div class="kpis">
+      <div class="card kpi"><div class="n" id="k7"></div><div class="l">calls, last 7 days</div></div>
+      <div class="card kpi"><div class="n" id="kchg"></div><div class="l" id="kchgl">change from the week before</div></div>
+      <div class="card kpi"><div class="n" id="k30"></div><div class="l">calls, last 30 days</div></div>
+    </div>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="h-service">
+        <h2 id="h-service">By service</h2>
+        <div class="bars" id="service"></div>
+      </section>
+      <section class="card" aria-labelledby="h-town">
+        <h2 id="h-town">Busiest towns (30 days)</h2>
+        <div class="bars" id="town"></div>
+      </section>
+    </div>
+
+    <section class="card" aria-labelledby="h-hour" style="margin-bottom:18px;">
+      <h2 id="h-hour">Calls by hour of day (Eastern, 30 days)</h2>
+      <div class="hours" id="hours" role="img" aria-label="Column chart of calls by hour of day"></div>
+      <div class="hlabels"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-daily" style="margin-bottom:18px;">
+      <h2 id="h-daily">Calls per day (last 30 days)</h2>
+      <div class="days" id="days" role="img" aria-label="Column chart of calls per day"></div>
+    </section>
+
+    <div class="grid">
+      <section class="card" aria-labelledby="h-type">
+        <h2 id="h-type">Most common call types (30 days)</h2>
+        <div class="bars" id="types"></div>
+      </section>
+    </div>
+
+    <p class="note">Updated <span id="stamp"></span>. Figures refresh about every 10 minutes. Counts come from the feed as imported, so a call can be counted more than once if the feed reports it twice.</p>
+  </div>
+</main>
+
+<footer class="wrap">© DelcoSpot · Dispatch data is a public summary and not an official record of any agency.</footer>
+
+<script>
+(function () {
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+  function bars(el, items, colorFor) {
+    if (!items.length) { el.innerHTML = '<p class="empty">Not enough calls to show here yet.</p>'; return; }
+    var max = Math.max.apply(null, items.map(function (i) { return i.count; }));
+    el.innerHTML = items.map(function (i) {
+      var pct = Math.round(i.count / max * 100);
+      var color = colorFor ? colorFor(i.name) : 'var(--green)';
+      return '<div class="row"><span>' + esc(i.name) + '</span>' +
+             '<span class="track"><span class="fill" style="display:block;width:' + pct + '%;background:' + color + '"></span></span>' +
+             '<span class="num">' + i.count.toLocaleString() + '</span></div>';
+    }).join('');
+  }
+  function columns(el, values, labelFor) {
+    var max = Math.max.apply(null, values.map(function (v) { return v.count; })) || 1;
+    el.innerHTML = values.map(function (v) {
+      var h = Math.max(2, Math.round(v.count / max * 100));
+      return '<div class="' + (el.id === 'days' ? 'dcol' : 'hcol') + '" style="height:' + h + '%" title="' +
+             esc(labelFor(v)) + ': ' + v.count + '"></div>';
+    }).join('');
+  }
+  function serviceColor(name) {
+    return { Fire: 'var(--fire)', EMS: 'var(--ems)' }[name] || 'var(--other)';
+  }
+  fetch('/api/stats/dispatch').then(function (r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(function (d) {
+    var t = d.totals;
+    document.getElementById('k7').textContent = t.last_7_days.toLocaleString();
+    document.getElementById('k30').textContent = t.last_30_days.toLocaleString();
+    var chg = document.getElementById('kchg');
+    if (t.change_percent === null) {
+      chg.textContent = '—';
+      document.getElementById('kchgl').textContent = 'not enough prior-week calls to compare';
+    } else {
+      chg.textContent = (t.change_percent > 0 ? '+' : '') + t.change_percent + '%';
+      chg.className = 'n ' + (t.change_percent > 0 ? 'up' : 'down');
+    }
+    bars(document.getElementById('service'), d.by_service, serviceColor);
+    bars(document.getElementById('town'), d.by_town);
+    bars(document.getElementById('types'), d.by_incident_type);
+    columns(document.getElementById('hours'), d.by_hour_eastern, function (v) {
+      var h = v.hour % 12 === 0 ? 12 : v.hour % 12;
+      return h + (v.hour < 12 ? ' AM' : ' PM');
+    });
+    columns(document.getElementById('days'), d.daily.map(function (x) { return { count: x.count, date: x.date }; }), function (v) { return v.date; });
+    document.getElementById('stamp').textContent = new Date(d.generated_at).toLocaleString();
+    document.getElementById('status').hidden = true;
+    document.getElementById('content').hidden = false;
+  }).catch(function () {
+    document.getElementById('status').textContent = 'Statistics are unavailable right now. Please try again later.';
+  });
+})();
+</script>
+</body>
+</html>
