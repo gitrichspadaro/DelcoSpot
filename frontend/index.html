@@ -392,6 +392,9 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
 /* ============ Toolbar / filters ============ */
 .toolbar { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem 1.25rem; margin-bottom: 1.25rem; box-shadow: var(--shadow-soft); }
 .filter-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
+.my-town-bar { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: center; margin-bottom: 0.9rem; font-size: 0.9rem; color: var(--ink-soft); }
+.my-town-bar strong { color: var(--ink); }
+.my-town-bar [hidden] { display: none !important; }
 .filter { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; font-weight: 600; }
 .filter input, .filter select { padding: 0.55rem 0.7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-weight: 400; min-width: 11rem; }
 .result-count { font-size: 0.9rem; color: var(--ink-soft); margin-top: 0.85rem; }
@@ -709,6 +712,11 @@ a.tile { line-height: normal; }
       </div>
 
       <div class="toolbar">
+        <div class="my-town-bar" id="my-town-bar">
+          <span id="my-town-text">Pick a municipality below to make it your default. It's saved in this browser only.</span>
+          <button type="button" class="btn btn-outline btn-sm" id="my-town-save" disabled>Save as my town</button>
+          <button type="button" class="btn btn-outline btn-sm" id="my-town-clear" hidden>Forget my town</button>
+        </div>
         <div class="filter-row">
           <label class="filter"><span>Search address or incident</span><input type="search" id="f-search" placeholder="e.g. Chester Pike"></label>
           <label class="filter"><span>Municipality</span><select id="f-town"><option value="">All municipalities</option></select></label>
@@ -1377,6 +1385,55 @@ a.tile { line-height: normal; }
       var o = document.createElement('option'); o.textContent = t; typeSel.appendChild(o);
     });
     townSel.value = currentTown; typeSel.value = currentType;
+
+    // Apply the saved town once, on first load, unless a town is already chosen.
+    var saved = getMyTown();
+    if (!myTownApplied && saved && !currentTown && towns[saved]) {
+      townSel.value = saved;
+    }
+    if (dispatchIncidents.length) myTownApplied = true;
+    renderMyTownBar();
+  }
+
+  var MY_TOWN_KEY = 'delcospot.myTown';
+  var myTownApplied = false;
+  function getMyTown() {
+    try { return localStorage.getItem(MY_TOWN_KEY) || ''; } catch (e) { return ''; }
+  }
+  function setMyTown(town) {
+    try {
+      if (town) localStorage.setItem(MY_TOWN_KEY, town); else localStorage.removeItem(MY_TOWN_KEY);
+    } catch (e) { /* storage blocked: the filter still works for this visit */ }
+  }
+  function renderMyTownBar() {
+    var saved = getMyTown();
+    var chosen = document.getElementById('f-town').value;
+    var text = document.getElementById('my-town-text');
+    var save = document.getElementById('my-town-save');
+    var clear = document.getElementById('my-town-clear');
+    if (saved) {
+      text.innerHTML = 'Your town: <strong>' + saved.replace(/[&<>"']/g, '') + '</strong>. Saved in this browser only.';
+    } else {
+      text.textContent = "Pick a municipality below to make it your default. It's saved in this browser only.";
+    }
+    save.disabled = !chosen || chosen === saved;
+    save.textContent = chosen && chosen !== saved ? 'Save ' + chosen + ' as my town' : 'Save as my town';
+    clear.hidden = !saved;
+  }
+  function wireMyTownBar() {
+    document.getElementById('my-town-save').addEventListener('click', function () {
+      var chosen = document.getElementById('f-town').value;
+      if (!chosen) return;
+      setMyTown(chosen);
+      renderMyTownBar();
+      toast('Saved ' + chosen + ' as your town.');
+    });
+    document.getElementById('my-town-clear').addEventListener('click', function () {
+      setMyTown('');
+      renderMyTownBar();
+      toast('Your town was forgotten.');
+    });
+    document.getElementById('f-town').addEventListener('change', renderMyTownBar);
   }
 
   function hasFullAccess() {
@@ -1483,6 +1540,7 @@ a.tile { line-height: normal; }
 
   function renderDispatch() {
     loadDispatch();
+    wireMyTownBar();
 
     ['f-search', 'f-town', 'f-type', 'f-service', 'f-status'].forEach(function (id) {
       var el = document.getElementById(id);
