@@ -5,6 +5,7 @@ Run by hand on the Render Web Shell:   python ops_stats.py
 Counts only -- no names or email addresses are printed. Needs the same
 DATABASE_URL environment variable as delcospot-api.
 """
+import sys
 from datetime import datetime, timedelta, timezone
 
 from app import create_app
@@ -50,6 +51,12 @@ def run():
                    .filter(ChatMessage.created_at >= week).distinct().count())
         print(f"  people posting, 7d: {posters}")
         print(f"  last message:       {_ago(now, db.session.query(db.func.max(ChatMessage.created_at)).scalar())}")
+        if "--list-users" in sys.argv:
+            print()
+            print("Users (newest first)")
+            for u in User.query.order_by(User.created_at.desc()).all():
+                when = _naive(u.created_at).strftime("%Y-%m-%d %H:%M") if u.created_at else "unknown"
+                print(f"  [{u.id}] {u.name} <{u.email}> joined {when} UTC")
         print()
         print("Dispatch feed")
         print(f"  incidents total:    {count(Incident)}")
