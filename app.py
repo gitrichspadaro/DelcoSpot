@@ -98,6 +98,26 @@ def create_app():
     login_manager.init_app(app)
     limiter.init_app(app)
 
+    @app.errorhandler(404)
+    def not_found(e):
+        # API callers keep getting JSON; people get a page with a way home.
+        from flask import request
+        if request.path.startswith("/api/"):
+            return jsonify({"errors": {"not_found": "Not found."}}), 404
+        page = (
+            '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            '<title>Page not found · DelcoSpot</title><meta name="robots" content="noindex">'
+            '<link rel="icon" href="/favicon.ico" sizes="any">'
+            '<style>body{margin:0;font-family:system-ui,sans-serif;background:#FAF8F4;color:#26302B;'
+            'display:grid;place-items:center;min-height:100vh;text-align:center;padding:20px}'
+            'a{color:#1D6B32;font-weight:600}</style></head><body><main>'
+            '<h1>Page not found</h1><p>That page isn\'t on DelcoSpot.</p>'
+            '<p><a href="/">Go to the home page</a> &middot; <a href="/stats/">Dispatch statistics</a> '
+            '&middot; <a href="/map/">Map</a></p></main></body></html>'
+        )
+        return Response(page, status=404, mimetype="text/html")
+
     @app.errorhandler(429)
     def rate_limited(e):
         return jsonify({"errors": {"rate_limit": "Too many requests. Please wait and try again."}}), 429
@@ -144,6 +164,19 @@ def create_app():
         response.headers["Cache-Control"] = "no-cache"
         return response
 
+    # Icons and the social share image. Real files (not inline data) because
+    # Google's favicon crawler and Facebook/X/iMessage previews need a URL.
+    assets_dir = os.path.join(frontend_dir, "assets")
+    asset_files = {"favicon.ico", "favicon.png", "apple-touch-icon.png", "icon-192.png", "og.png"}
+
+    def _asset(name):
+        response = send_from_directory(assets_dir, name)
+        response.headers["Cache-Control"] = "public, max-age=604800"  # 1 week
+        return response
+
+    for _name in asset_files:
+        app.add_url_rule(f"/{_name}", endpoint=f"asset_{_name}", view_func=lambda n=_name: _asset(n))
+
     @app.get("/map/data/<path:filename>")
     def map_data(filename):
         return send_from_directory(os.path.join(map_dir, "data"), filename)
@@ -170,9 +203,22 @@ def create_app():
         # real page to list there, plus the separate 3D map page at /map/.
         # Nightlife/Jobs/Real Estate are hidden from navigation until they
         # have real data, so nothing new to add for those.
-        urls = (
-            f"<url><loc>{site_url}/</loc></url>"
-            f"<url><loc>{site_url}/map/</loc></url>"
+        # lastmod: the home and map pages use their file dates (i.e. the last
+        # deploy that changed them); stats are recomputed daily, so today.
+        from datetime import date, datetime, timezone
+
+        def _filedate(*parts):
+            ts = os.path.getmtime(os.path.join(frontend_dir, *parts))
+            return datetime.fromtimestamp(ts, timezone.utc).date().isoformat()
+
+        pages = [
+            ("/", _filedate("index.html"), "hourly"),
+            ("/stats/", date.today().isoformat(), "daily"),
+            ("/map/", _filedate("map", "index.html"), "monthly"),
+        ]
+        urls = "".join(
+            f"<url><loc>{site_url}{path}</loc><lastmod>{mod}</lastmod><changefreq>{freq}</changefreq></url>"
+            for path, mod, freq in pages
         )
         body = (
             '<?xml version="1.0" encoding="UTF-8"?>'
