@@ -184,7 +184,7 @@ def create_app():
     # SITE_URL lets this work correctly on Render preview/staging URLs too,
     # without hardcoding the production domain -- defaults to production
     # since that's what matters for actual search indexing.
-    site_url = os.environ.get("SITE_URL", "https://delcospot.com").rstrip("/")
+    site_url = os.environ.get("SITE_URL", "https://www.delcospot.com").rstrip("/")
 
     @app.get("/robots.txt")
     def robots_txt():
