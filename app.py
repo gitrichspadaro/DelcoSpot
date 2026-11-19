@@ -25,6 +25,7 @@ from venues import venues_bp
 from listings import listings_bp
 from weather import weather_bp
 from stats import stats_bp
+from towns import towns_bp, indexable_slugs
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 
@@ -136,6 +137,7 @@ def create_app():
     app.register_blueprint(listings_bp)
     app.register_blueprint(weather_bp)
     app.register_blueprint(stats_bp)
+    app.register_blueprint(towns_bp)
 
     # The frontend is a single self-contained HTML file (no build step),
     # served directly from this Flask app so the site and its API share
@@ -215,7 +217,14 @@ def create_app():
             ("/", _filedate("index.html"), "hourly"),
             ("/stats/", date.today().isoformat(), "daily"),
             ("/map/", _filedate("map", "index.html"), "monthly"),
+            ("/town/", date.today().isoformat(), "daily"),
         ]
+        # Only towns with enough calls to be worth indexing (see towns.py).
+        # A database hiccup must never break the sitemap, so fall back to none.
+        try:
+            pages += [(f"/town/{s}/", date.today().isoformat(), "daily") for s in indexable_slugs()]
+        except Exception:
+            db.session.rollback()
         urls = "".join(
             f"<url><loc>{site_url}{path}</loc><lastmod>{mod}</lastmod><changefreq>{freq}</changefreq></url>"
             for path, mod, freq in pages

@@ -929,6 +929,7 @@ a.tile { line-height: normal; }
         <a href="#" class="nav-link" data-target="chat">Chat</a>
         <a href="/map/" class="nav-link">Map</a>
       <a href="/stats/" class="nav-link">Stats</a>
+      <a href="/town/" class="nav-link">Towns</a>
         <!-- Hidden until real data is populated: Nightlife, Jobs, Real Estate -->
       </nav>
     </div>
@@ -1394,14 +1395,17 @@ a.tile { line-height: normal; }
 
     // Apply the saved town once, on first load, unless a town is already chosen.
     var saved = getMyTown();
-    if (!myTownApplied && saved && !currentTown && towns[saved]) {
-      townSel.value = saved;
+    var want = urlTown || saved;  // a ?town= link from a town page wins over the saved town
+    if (!myTownApplied && want && !currentTown && towns[want]) {
+      townSel.value = want;
     }
     if (dispatchIncidents.length) myTownApplied = true;
     renderMyTownBar();
   }
 
   var MY_TOWN_KEY = 'delcospot.myTown';
+  var urlTown = '';
+  try { urlTown = new URLSearchParams(location.search).get('town') || ''; } catch (e) {}
   var myTownApplied = false;
   function getMyTown() {
     try { return localStorage.getItem(MY_TOWN_KEY) || ''; } catch (e) { return ''; }
@@ -1989,7 +1993,7 @@ a.tile { line-height: normal; }
     renderJobs();
     renderNews();
     loadWeather();
-    showSection('home');
+    showSection(urlTown ? 'dispatch' : 'home');  // a ?town= link from a town page opens the board
   });
 })();
 </script>

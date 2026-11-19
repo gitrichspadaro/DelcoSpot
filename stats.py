@@ -32,6 +32,14 @@ _cache = {"data": None, "at": 0.0}
 _FRONTEND = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend")
 
 
+def pretty_type(text):
+    """Title-case a call type but keep the county's EMS acronyms upper-case."""
+    out = text.strip().title()
+    for word in ("Als", "Bls", "Ems", "Ems/", "Cpr"):
+        out = out.replace(word, word.upper()) if word in out else out
+    return out
+
+
 def _to_eastern(naive_utc):
     return naive_utc.replace(tzinfo=timezone.utc).astimezone(EASTERN)
 
@@ -63,7 +71,7 @@ def build_stats(now_utc=None):
         if town:
             towns[town] += 1
         if incident_type:
-            types[incident_type.strip().title()] += 1
+            types[pretty_type(incident_type)] += 1
         local = _to_eastern(occurred)
         hours[local.hour] += 1
         days[local.date().isoformat()] += 1
