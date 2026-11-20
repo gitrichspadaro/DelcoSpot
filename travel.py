@@ -25,6 +25,7 @@ import re
 import threading
 import time
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from html import escape, unescape
 
 import requests
@@ -38,6 +39,7 @@ UA = {"User-Agent": "DelcoSpot travel board (https://www.delcospot.com)"}
 
 SEPTA_INDEX = "https://www3.septa.org/api/Alerts/index.php"
 SEPTA_DETAIL = "https://www3.septa.org/api/Alerts/get_alert_data.php"
+EASTERN = ZoneInfo("America/New_York")  # own copy: no dependency on stats.py
 RCRS_URL = os.environ.get("PENNDOT_RCRS_URL", "https://eventsdata.dot.pa.gov/liveEvents")
 DELAWARE_COUNTY_CODE = "23"  # PennDOT county codes are alphabetical; Delaware is 23
 
@@ -98,7 +100,6 @@ def _when(text):
         dt = datetime.strptime(str(text).strip()[:16], "%Y-%m-%d %H:%M")
     except ValueError:
         return str(text or "")
-    from stats import EASTERN
     today = datetime.now(EASTERN).date()
     clock = dt.strftime("%I:%M %p").lstrip("0")
     return clock if dt.date() == today else f"{dt.strftime('%b')} {dt.day}, {clock}"
@@ -342,7 +343,6 @@ def api_travel():
 def _eastern(iso):
     if not iso:
         return ""
-    from stats import EASTERN
     dt = datetime.fromisoformat(iso.replace("Z", "+00:00")).astimezone(EASTERN)
     return dt.strftime("%I:%M %p").lstrip("0")
 
@@ -437,11 +437,15 @@ def _render_page(data):
                  f'<a href="{PA511}" {EXT}>511PA</a> before you travel. '
                  f'See also <a href="/town/">fire and EMS activity by town</a> and '
                  f'<a href="/stats/">countywide statistics</a>.</p>')
+    import inspect
+    page_kw = {"current": "/travel/",
+               "extra_head": _jsonld(s["updated_at"] if s["lines"] is not None else None)}
+    accepted = inspect.signature(_page).parameters
+    page_kw = {k: v for k, v in page_kw.items() if k in accepted}  # works with an older towns.py too
     html = _page("Delco travel: SEPTA status and road incidents · DelcoSpot",
                  "SEPTA alerts, advisories and detours for Delaware County rail lines and trolleys, "
                  "plus road incidents and roadwork in the county.",
-                 "/travel/", "".join(parts), current="/travel/",
-                 extra_head=_jsonld(s["updated_at"] if s["lines"] is not None else None))
+                 "/travel/", "".join(parts), **page_kw)
     return html.replace("</style>", PAGE_CSS + "</style>", 1)
 
 
