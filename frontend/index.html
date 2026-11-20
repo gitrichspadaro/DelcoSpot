@@ -746,11 +746,11 @@ a.tile { line-height: normal; }
       <div class="toolbar">
         <div class="my-town-bar" id="my-town-bar">
           <span id="my-town-text">Pick a municipality below to make it your default. It's saved in this browser only.</span>
-          <button type="button" class="btn btn-outline btn-sm" id="my-town-save" disabled>Save as my town</button>
+          <button type="button" class="btn btn-outline btn-sm" id="my-town-save">Save as my town</button>
           <button type="button" class="btn btn-outline btn-sm" id="my-town-clear" hidden>Forget my town</button>
         </div>
         <div class="filter-row">
-          <label class="filter"><span>Search address or incident</span><input type="search" id="f-search" placeholder="e.g. Chester Pike"></label>
+          <label class="filter"><span>Search address or incident</span><input type="search" id="f-search" name="incident-search" placeholder="e.g. Chester Pike" autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore></label>
           <label class="filter"><span>Municipality</span><select id="f-town"><option value="">All municipalities</option></select></label>
           <label class="filter"><span>Incident type</span><select id="f-type"><option value="">All types</option></select></label>
           <label class="filter"><span>Service</span><select id="f-service"><option value="">All services</option><option>Fire</option><option>EMS</option><option>Other</option></select></label>
@@ -1402,6 +1402,30 @@ a.tile { line-height: normal; }
     return new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
   }
 
+  // All 49 Delaware County municipalities, so every town is in the dropdown even
+  // with no calls in the loaded window. Names follow the dispatch feed's style;
+  // any feed name not in this list (e.g. "Unknown") is added too.
+  var DELCO_MUNICIPALITIES = [
+    'Aldan Borough', 'Aston Township', 'Bethel Township', 'Birmingham Township', 'Brookhaven Borough',
+    'Chadds Ford Township', 'Chester City', 'Chester Township', 'Clifton Heights Borough', 'Collingdale Borough',
+    'Colwyn Borough', 'Concord Township', 'Darby Borough', 'Darby Township', 'East Lansdowne Borough',
+    'Eddystone Borough', 'Edgmont Township', 'Folcroft Borough', 'Glenolden Borough', 'Haverford Township',
+    'Lansdowne Borough', 'Lower Chichester Township', 'Marcus Hook Borough', 'Marple Township', 'Media Borough',
+    'Middletown Township', 'Millbourne Borough', 'Morton Borough', 'Nether Providence Township', 'Newtown Township',
+    'Norwood Borough', 'Parkside Borough', 'Prospect Park Borough', 'Radnor Township', 'Ridley Park Borough',
+    'Ridley Township', 'Rose Valley Borough', 'Rutledge Borough', 'Sharon Hill Borough', 'Springfield Township',
+    'Swarthmore Borough', 'Thornbury Township', 'Tinicum Township', 'Trainer Borough', 'Upland Borough',
+    'Upper Chichester Township', 'Upper Darby Township', 'Upper Providence Township', 'Yeadon Borough'
+  ];
+  function townKey(t) { return String(t || '').trim().toLowerCase(); }
+
+  // Find the dropdown's own spelling of a town name (case-insensitive).
+  function matchTownOption(name) {
+    var k = townKey(name), opts = document.getElementById('f-town').options;
+    for (var i = 1; i < opts.length; i++) if (townKey(opts[i].value) === k) return opts[i].value;
+    return '';
+  }
+
   function populateFilterOptions() {
     var townSel = document.getElementById('f-town');
     var typeSel = document.getElementById('f-type');
@@ -1410,20 +1434,26 @@ a.tile { line-height: normal; }
     typeSel.innerHTML = '<option value="">All types</option>';
 
     var towns = {}, types = {};
-    dispatchIncidents.forEach(function (inc) { towns[inc.town] = true; types[inc.type] = true; });
+    DELCO_MUNICIPALITIES.forEach(function (t) { towns[townKey(t)] = t; });
+    dispatchIncidents.forEach(function (inc) {
+      if (inc.town && !towns[townKey(inc.town)]) towns[townKey(inc.town)] = inc.town;
+      types[inc.type] = true;
+    });
 
-    Object.keys(towns).sort().forEach(function (t) {
-      var o = document.createElement('option'); o.textContent = t; townSel.appendChild(o);
+    Object.keys(towns).map(function (k) { return towns[k]; }).sort(function (a, b) {
+      if (a === 'Unknown') return 1; if (b === 'Unknown') return -1;  // keep "Unknown" last
+      return a.localeCompare(b);
+    }).forEach(function (t) {
+      var o = document.createElement('option'); o.textContent = t; o.value = t; townSel.appendChild(o);
     });
     Object.keys(types).sort().forEach(function (t) {
       var o = document.createElement('option'); o.textContent = t; typeSel.appendChild(o);
     });
-    townSel.value = currentTown; typeSel.value = currentType;
+    townSel.value = matchTownOption(currentTown); typeSel.value = currentType;
 
     // Apply the saved town once, on first load, unless a town is already chosen.
-    var saved = getMyTown();
-    var want = urlTown || saved;  // a ?town= link from a town page wins over the saved town
-    if (!myTownApplied && want && !currentTown && towns[want]) {
+    var want = matchTownOption(urlTown || getMyTown());  // a ?town= link wins over the saved town
+    if (!myTownApplied && want && !townSel.value) {
       townSel.value = want;
     }
     if (dispatchIncidents.length) myTownApplied = true;
@@ -1453,14 +1483,37 @@ a.tile { line-height: normal; }
     } else {
       text.textContent = "Pick a municipality below to make it your default. It's saved in this browser only.";
     }
-    save.disabled = !chosen || chosen === saved;
+    save.hidden = !!chosen && chosen === saved;  // already saved: nothing to do
     save.textContent = chosen && chosen !== saved ? 'Save ' + chosen + ' as my town' : 'Save as my town';
     clear.hidden = !saved;
   }
+  // Some browsers autofill a saved email into the search box despite autocomplete="off".
+  // Clear an email-looking value unless the person typed it themselves.
+  function guardSearchAutofill() {
+    var el = document.getElementById('f-search');
+    if (!el) return;
+    var typed = false;
+    el.addEventListener('keydown', function () { typed = true; });
+    el.addEventListener('paste', function () { typed = true; });
+    function check() {
+      if (!typed && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim())) {
+        el.value = '';
+        if (typeof applyDispatchFilters === 'function') applyDispatchFilters();
+      }
+    }
+    [300, 1000, 2500].forEach(function (ms) { setTimeout(check, ms); });
+    el.addEventListener('change', check);
+  }
+
   function wireMyTownBar() {
     document.getElementById('my-town-save').addEventListener('click', function () {
-      var chosen = document.getElementById('f-town').value;
-      if (!chosen) return;
+      var townSel = document.getElementById('f-town');
+      var chosen = townSel.value;
+      if (!chosen) {
+        toast('Pick your municipality from the list first, then save it.');
+        townSel.focus();
+        return;
+      }
       setMyTown(chosen);
       renderMyTownBar();
       toast('Saved ' + chosen + ' as your town.');
@@ -1489,7 +1542,7 @@ a.tile { line-height: normal; }
     var gated = !dispatchAccessFull;
 
     dispatchView = dispatchIncidents.filter(function (inc) {
-      if (town && inc.town !== town) return false;
+      if (town && townKey(inc.town) !== townKey(town)) return false;
       if (type && inc.type !== type) return false;
       if (svc && inc.service !== svc) return false;
       if (st && inc.status !== st) return false;
@@ -1535,6 +1588,14 @@ a.tile { line-height: normal; }
   function renderDispatchRows() {
     var body = document.getElementById('dispatch-body');
     if (!dispatchView.length) {
+      var onlyTown = document.getElementById('f-town').value;
+      var otherFilters = ['f-search', 'f-type', 'f-service', 'f-status'].some(function (id) { return document.getElementById(id).value; });
+      if (onlyTown && !otherFilters) {
+        var span = dispatchAccessFull ? 'on record' : 'in the last 24 hours';
+        body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><p><strong>No incidents in ' + escapeHtml(onlyTown) + ' ' + span + '.</strong></p>' +
+          '<p class="small">That is good news. Choose All municipalities to see the rest of the county.</p></div></td></tr>';
+        return;
+      }
       body.innerHTML = '<tr><td colspan="8"><div class="empty-state"><p><strong>No incidents match these filters.</strong></p>' +
         '<p class="small">Widen the search or clear the filters to see more.</p></div></td></tr>';
       return;
@@ -1578,6 +1639,7 @@ a.tile { line-height: normal; }
   function renderDispatch() {
     loadDispatch();
     wireMyTownBar();
+    guardSearchAutofill();
 
     ['f-search', 'f-town', 'f-type', 'f-service', 'f-status'].forEach(function (id) {
       var el = document.getElementById(id);
