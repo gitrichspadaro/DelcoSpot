@@ -34,7 +34,12 @@ from flask import Blueprint, Response, jsonify
 travel_bp = Blueprint("travel", __name__)
 
 CACHE_SECONDS = int(os.environ.get("TRAVEL_CACHE_SECONDS", "300"))
-TIMEOUT = 8
+TIMEOUT = (4, 10)        # connect, read (seconds) per request
+FETCH_BUDGET = 25        # whole SEPTA refresh must finish within this many seconds
+# Feeds are fetched in a background thread, never while a visitor waits:
+# gunicorn kills a request after 30 s, and SEPTA can be slower than that.
+# TRAVEL_SYNC_FETCH=1 fetches inline instead (used by tests).
+SYNC_FETCH = os.environ.get("TRAVEL_SYNC_FETCH") == "1"
 UA = {"User-Agent": "DelcoSpot travel board (https://www.delcospot.com)"}
 
 SEPTA_INDEX = "https://www3.septa.org/api/Alerts/index.php"
@@ -109,10 +114,16 @@ class FeedError(Exception):
     pass
 
 
+class _Deadline:
+    at = None
+
+
 def _get_json(url, **kw):
     """GET and parse JSON. Tolerates a byte-order mark or a wrong content type;
     raises FeedError with a short reason (HTTP status, timeout, not JSON)."""
     import json
+    if _Deadline.at is not None and time.time() > _Deadline.at:
+        raise FeedError("time budget used up")
     try:
         r = requests.get(url, headers=UA, timeout=TIMEOUT, **kw)
     except requests.Timeout:
@@ -178,6 +189,14 @@ def _line_status(notices):
 
 
 def fetch_septa():
+    _Deadline.at = time.time() + FETCH_BUDGET
+    try:
+        return _fetch_septa()
+    finally:
+        _Deadline.at = None
+
+
+def _fetch_septa():
     routes = _get_json(SEPTA_INDEX)
     if isinstance(routes, dict):
         routes = routes.get("alerts") or routes.get("routes") or list(routes.values())
@@ -289,33 +308,55 @@ def fetch_roads():
 
 # ---------- cache ----------
 
-def _refresh(name, fn):
-    now = time.time()
-    if _cache[name] is not None and now - _cache[f"{name}_at"] < CACHE_SECONDS:
-        return
+_running = set()
+
+
+def _do_refresh(name, fn):
     try:
         _cache[name] = {"items": fn(), "at": _now(), "error": None}
     except Exception as exc:  # keep the last good copy, note the failure
         prev = _cache[name] or {"items": None, "at": None}
-        _cache[name] = {"items": prev["items"], "at": prev["at"], "error": type(exc).__name__}
-    _cache[f"{name}_at"] = now
+        _cache[name] = {"items": prev["items"], "at": prev["at"],
+                        "error": str(exc) if isinstance(exc, FeedError) else type(exc).__name__}
+    finally:
+        with _lock:
+            _running.discard(name)
+
+
+def _refresh(name, fn):
+    """Start a refresh if the copy is stale. Never blocks the request (unless SYNC_FETCH)."""
+    now = time.time()
+    with _lock:
+        if name in _running:
+            return
+        if _cache[name] is not None and now - _cache[f"{name}_at"] < CACHE_SECONDS:
+            return
+        _cache[f"{name}_at"] = now
+        _running.add(name)
+    if SYNC_FETCH:
+        _do_refresh(name, fn)
+    else:
+        threading.Thread(target=_do_refresh, args=(name, fn), daemon=True).start()
+
+
+def _section_state(c, name):
+    if c.get("items") is not None:
+        return "stale" if c.get("error") else "ok"
+    if name in _running and not c.get("error"):
+        return "checking"  # first fetch still in progress
+    return "unavailable"
 
 
 def board():
-    with _lock:
-        _refresh("septa", fetch_septa)
-        if _rcrs_creds():
-            _refresh("roads", fetch_roads)
+    _refresh("septa", fetch_septa)
+    if _rcrs_creds():
+        _refresh("roads", fetch_roads)
     s, r = _cache["septa"] or {}, _cache["roads"] or {}
-    septa = {"lines": s.get("items"), "updated_at": _iso(s.get("at")),
-             "state": "ok" if s.get("items") is not None and not s.get("error")
-             else ("stale" if s.get("items") is not None else "unavailable")}
+    septa = {"lines": s.get("items"), "updated_at": _iso(s.get("at")), "state": _section_state(s, "septa")}
     if not _rcrs_creds():
         roads = {"events": None, "updated_at": None, "state": "not_configured"}
     else:
-        roads = {"events": r.get("items"), "updated_at": _iso(r.get("at")),
-                 "state": "ok" if r.get("items") is not None and not r.get("error")
-                 else ("stale" if r.get("items") is not None else "unavailable")}
+        roads = {"events": r.get("items"), "updated_at": _iso(r.get("at")), "state": _section_state(r, "roads")}
     return {"septa": septa, "roads": roads}
 
 
@@ -393,7 +434,9 @@ def _render_page(data):
              'plus active road incidents and roadwork in Delaware County, Pennsylvania. '
              'Refreshed about every 5 minutes.</p>',
              "<h2>SEPTA service notices</h2>"]
-    if s["lines"] is None:
+    if s["lines"] is None and s["state"] == "checking":
+        parts.append('<p class="stamp">Checking SEPTA now. Refresh this page in a few seconds.</p>')
+    elif s["lines"] is None:
         parts.append(f'<p class="stamp">Status unavailable. Check with '
                      f'<a href="{SEPTA_ALERTS}" {EXT}>SEPTA</a> for more details.</p>')
     else:
@@ -414,6 +457,8 @@ def _render_page(data):
     if r["state"] == "not_configured":
         parts.append(f'<p class="stamp">Road incidents are coming soon. For now, see '
                      f'<a href="{PA511}" {EXT}>511PA</a>.</p>')
+    elif r["events"] is None and r["state"] == "checking":
+        parts.append('<p class="stamp">Checking 511PA now. Refresh this page in a few seconds.</p>')
     elif r["events"] is None:
         parts.append(f'<p class="stamp">Road information is unavailable right now. '
                      f'<a href="{PA511}" {EXT}>Check 511PA</a>.</p>')

@@ -2018,7 +2018,10 @@ a.tile { line-height: normal; }
       .then(function (data) {
         var s = data.septa || {}, r = data.roads || {};
         rowsEl.innerHTML = '';
-        if (!s.lines) {
+        if (!s.lines && s.state === 'checking') {
+          stampEl.textContent = 'Checking SEPTA now\u2026';
+          setTimeout(loadTravel, 8000);
+        } else if (!s.lines) {
           stampEl.textContent = 'Status unavailable. Check with SEPTA for more details.';
         } else {
           stampEl.textContent = 'SEPTA updated ' + timeOf(s.updated_at) + (s.state === 'stale' ? ' (last check failed)' : '');
