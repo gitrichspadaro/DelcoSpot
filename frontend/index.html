@@ -2025,12 +2025,9 @@ a.tile { line-height: normal; }
           s.lines.forEach(function (ln) {
             var li = document.createElement('li');
             var name = document.createElement('span'); name.className = 'travel-name'; name.textContent = ln.name;
-            var notes = ln.notices || [];
-            if (notes.length) {
+            if (ln.message) {
               var msg = document.createElement('span'); msg.className = 'travel-msg';
-              var first = notes[0].text;
-              if (first.length > 140) first = first.slice(0, 139) + '\u2026';
-              msg.textContent = first + (notes.length > 1 ? ' (+' + (notes.length - 1) + ' more notice' + (notes.length > 2 ? 's' : '') + ')' : '');
+              msg.textContent = ln.message.length > 140 ? ln.message.slice(0, 139) + '\u2026' : ln.message;
               name.appendChild(msg);
             }
             var pill = document.createElement('span'); pill.className = 'travel-pill ' + ln.state; pill.textContent = ln.label;

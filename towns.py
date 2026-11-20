@@ -119,12 +119,9 @@ ul.towns{columns:2;column-gap:30px;padding-left:18px}@media(max-width:560px){ul.
 """
 
 
-def _page(title, description, path, body, indexable=True, current=None, extra_head=""):
+def _page(title, description, path, body, indexable=True):
     robots = "" if indexable else '<meta name="robots" content="noindex,follow">\n'
     url = f"{SITE}{path}"
-    # Header links; the page you are on is left out so it doesn't link to itself.
-    links = [("/", "Home"), ("/town/", "Towns"), ("/travel/", "Travel"), ("/stats/", "Statistics")]
-    nav = " &middot; ".join(f'<a href="{h}">{t}</a>' for h, t in links if h != current)
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -140,9 +137,9 @@ def _page(title, description, path, body, indexable=True, current=None, extra_he
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="{escape(title)}">
 <meta name="twitter:description" content="{escape(description)}"><meta name="twitter:image" content="{SITE}/og.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Source+Serif+4:wght@700&display=swap">
-{extra_head}<style>{CSS}</style></head><body>
+<style>{CSS}</style></head><body>
 <header><div class="wrap top"><a class="brand" href="/">DelcoSpot</a>
-<nav>{nav}</nav></div></header>
+<nav><a href="/">Home</a> &middot; <a href="/town/">Towns</a> &middot; <a href="/travel/">Travel</a> &middot; <a href="/stats/">Statistics</a></nav></div></header>
 <main class="wrap">{body}</main>
 <footer class="wrap">&copy; DelcoSpot &middot; Dispatch data is a public summary and not an official record of any agency.</footer>
 </body></html>"""
