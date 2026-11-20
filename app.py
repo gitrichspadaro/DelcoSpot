@@ -26,6 +26,7 @@ from listings import listings_bp
 from weather import weather_bp
 from stats import stats_bp
 from towns import towns_bp, indexable_slugs
+from travel import travel_bp, health as travel_health
 
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 
@@ -138,6 +139,7 @@ def create_app():
     app.register_blueprint(weather_bp)
     app.register_blueprint(stats_bp)
     app.register_blueprint(towns_bp)
+    app.register_blueprint(travel_bp)
 
     # The frontend is a single self-contained HTML file (no build step),
     # served directly from this Flask app so the site and its API share
@@ -218,6 +220,7 @@ def create_app():
             ("/stats/", date.today().isoformat(), "daily"),
             ("/map/", _filedate("map", "index.html"), "monthly"),
             ("/town/", date.today().isoformat(), "daily"),
+            ("/travel/", date.today().isoformat(), "hourly"),
         ]
         # Only towns with enough calls to be worth indexing (see towns.py).
         # A database hiccup must never break the sitemap, so fall back to none.
@@ -293,6 +296,8 @@ def create_app():
                 "incidents_imported_last_24h": last_24h,
                 "stale_after_hours": stale_hours,
             },
+            # Informational only: a SEPTA or PennDOT outage never changes the status code.
+            "travel_feeds": travel_health(),
         })
         resp = jsonify(out)
         resp.headers["Cache-Control"] = "no-store"

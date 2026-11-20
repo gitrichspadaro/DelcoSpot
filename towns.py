@@ -139,7 +139,7 @@ def _page(title, description, path, body, indexable=True):
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=Source+Serif+4:wght@700&display=swap">
 <style>{CSS}</style></head><body>
 <header><div class="wrap top"><a class="brand" href="/">DelcoSpot</a>
-<nav><a href="/">Home</a> &middot; <a href="/town/">Towns</a> &middot; <a href="/stats/">Statistics</a></nav></div></header>
+<nav><a href="/">Home</a> &middot; <a href="/town/">Towns</a> &middot; <a href="/travel/">Travel</a> &middot; <a href="/stats/">Statistics</a></nav></div></header>
 <main class="wrap">{body}</main>
 <footer class="wrap">&copy; DelcoSpot &middot; Dispatch data is a public summary and not an official record of any agency.</footer>
 </body></html>"""

@@ -298,6 +298,19 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
   .tiles-grid { grid-template-columns: 1fr; }
 }
 
+.travel-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem; }
+.travel-card .travel-stamp { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 0.6rem; }
+.travel-rows { list-style: none; margin: 0; padding: 0; }
+.travel-rows li { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.55rem 0; border-top: 1px solid var(--border); }
+.travel-rows li:first-child { border-top: 0; }
+.travel-rows .travel-name { flex: 1; }
+.travel-rows .travel-msg { display: block; font-size: 0.85rem; color: var(--ink-soft); margin-top: 0.15rem; }
+.travel-pill { font-size: 0.8rem; font-weight: 600; padding: 0.1rem 0.6rem; border-radius: 999px; white-space: nowrap; }
+.travel-pill.ok { background: var(--moss-tint); color: var(--slate-700); }
+.travel-pill.advisory, .travel-pill.detour { background: var(--amber-tint); color: var(--amber-dark); }
+.travel-pill.alert { background: var(--brick-tint); color: var(--brick); }
+.travel-pill.unknown { background: var(--paper); color: var(--ink-soft); border: 1px solid var(--border); }
+.travel-roads { margin: 0.8rem 0 0; font-size: 0.95rem; }
 .resource-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.25rem; }
 .resource-link {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem; text-decoration: none;
@@ -588,6 +601,7 @@ a.tile { line-height: normal; }
       <a href="#" class="nav-link" data-target="news">News</a>
       <a href="#" class="nav-link" data-target="chat">Chat</a>
       <a href="/map/" class="nav-link">Map</a>
+      <a href="/travel/" class="nav-link">Travel</a>
       <a href="/stats/" class="nav-link">Stats</a>
       <!-- Hidden until real data is populated: Nightlife, Jobs, Real Estate -->
       <div class="nav-auth" id="nav-auth">
@@ -665,6 +679,19 @@ a.tile { line-height: normal; }
           <span class="tile-cta">Open the map</span>
         </a>
         <!-- Hidden until real data is populated: Nightlife, Jobs, Real Estate -->
+      </div>
+    </div>
+
+    <div class="container" style="margin-top:3rem;" id="travel-home">
+      <div class="section-head">
+        <h2>Getting around Delco</h2>
+        <p class="muted">SEPTA service on the lines that serve the county, and road incidents.</p>
+      </div>
+      <div class="travel-card">
+        <p class="travel-stamp" id="travel-stamp">Loading travel status&hellip;</p>
+        <ul class="travel-rows" id="travel-rows"></ul>
+        <p class="travel-roads" id="travel-roads"></p>
+        <a class="btn btn-outline btn-sm" href="/travel/" style="margin-top:0.8rem;">See the full travel board</a>
       </div>
     </div>
 
@@ -930,6 +957,7 @@ a.tile { line-height: normal; }
         <a href="/map/" class="nav-link">Map</a>
       <a href="/stats/" class="nav-link">Stats</a>
       <a href="/town/" class="nav-link">Towns</a>
+      <a href="/travel/" class="nav-link">Travel</a>
         <!-- Hidden until real data is populated: Nightlife, Jobs, Real Estate -->
       </nav>
     </div>
@@ -1974,6 +2002,48 @@ a.tile { line-height: normal; }
       });
   }
 
+  /* ---------- Travel card ---------- */
+  // Compact SEPTA + roads summary from /api/travel (cached server-side).
+  // Built with textContent only: messages come from outside feeds.
+  function loadTravel() {
+    var rowsEl = document.getElementById('travel-rows');
+    var stampEl = document.getElementById('travel-stamp');
+    var roadsEl = document.getElementById('travel-roads');
+    if (!rowsEl) return;
+    function timeOf(iso) {
+      try { return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; }
+    }
+    fetch('/api/travel')
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        var s = data.septa || {}, r = data.roads || {};
+        rowsEl.innerHTML = '';
+        if (!s.lines) {
+          stampEl.textContent = 'SEPTA status is unavailable right now.';
+        } else {
+          stampEl.textContent = 'SEPTA updated ' + timeOf(s.updated_at) + (s.state === 'stale' ? ' (last check failed)' : '');
+          s.lines.forEach(function (ln) {
+            var li = document.createElement('li');
+            var name = document.createElement('span'); name.className = 'travel-name'; name.textContent = ln.name;
+            if (ln.message) {
+              var msg = document.createElement('span'); msg.className = 'travel-msg';
+              msg.textContent = ln.message.length > 140 ? ln.message.slice(0, 139) + '\u2026' : ln.message;
+              name.appendChild(msg);
+            }
+            var pill = document.createElement('span'); pill.className = 'travel-pill ' + ln.state; pill.textContent = ln.label;
+            li.appendChild(name); li.appendChild(pill); rowsEl.appendChild(li);
+          });
+        }
+        if (r.state === 'not_configured') roadsEl.textContent = 'Road incidents are coming soon.';
+        else if (!r.events) roadsEl.textContent = 'Road information is unavailable right now.';
+        else if (!r.events.length) roadsEl.textContent = 'No active road incidents or roadwork reported in Delaware County.';
+        else roadsEl.textContent = r.events.length + ' active road ' + (r.events.length === 1 ? 'event' : 'events') + ' in Delaware County.';
+      })
+      .catch(function () {
+        stampEl.textContent = 'Travel status is unavailable right now.';
+      });
+  }
+
   /* ---------- Boot ---------- */
   document.addEventListener('DOMContentLoaded', function () {
     var yearEl = document.getElementById('footer-year');
@@ -1988,6 +2058,7 @@ a.tile { line-height: normal; }
       applyChatAccess(); // re-check now that an existing session (e.g. a page reload) is known
     });
     renderChat();
+    loadTravel();
     renderNightlife();
     renderRealEstate();
     renderJobs();
