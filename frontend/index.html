@@ -601,7 +601,6 @@ a.tile { line-height: normal; }
       <a href="#" class="nav-link" data-target="news">News</a>
       <a href="#" class="nav-link" data-target="chat">Chat</a>
       <a href="/map/" class="nav-link">Map</a>
-      <a href="/travel/" class="nav-link">Travel</a>
       <a href="/stats/" class="nav-link">Stats</a>
       <!-- Hidden until real data is populated: Nightlife, Jobs, Real Estate -->
       <div class="nav-auth" id="nav-auth">
@@ -682,7 +681,8 @@ a.tile { line-height: normal; }
       </div>
     </div>
 
-    <div class="container" style="margin-top:3rem;" id="travel-home">
+    <!-- Travel card hidden until SEPTA data works; remove "hidden" and restore loadTravel() in the boot code to show it. -->
+    <div class="container" style="margin-top:3rem;" id="travel-home" hidden>
       <div class="section-head">
         <h2>Getting around Delco</h2>
         <p class="muted">SEPTA service on the lines that serve the county, and road incidents.</p>
@@ -957,7 +957,6 @@ a.tile { line-height: normal; }
         <a href="/map/" class="nav-link">Map</a>
       <a href="/stats/" class="nav-link">Stats</a>
       <a href="/town/" class="nav-link">Towns</a>
-      <a href="/travel/" class="nav-link">Travel</a>
         <!-- Hidden until real data is populated: Nightlife, Jobs, Real Estate -->
       </nav>
     </div>
@@ -2067,7 +2066,7 @@ a.tile { line-height: normal; }
       applyChatAccess(); // re-check now that an existing session (e.g. a page reload) is known
     });
     renderChat();
-    loadTravel();
+    // loadTravel();  // hidden until SEPTA data works
     renderNightlife();
     renderRealEstate();
     renderJobs();

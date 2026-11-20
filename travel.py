@@ -40,6 +40,9 @@ FETCH_BUDGET = 25        # whole SEPTA refresh must finish within this many seco
 # gunicorn kills a request after 30 s, and SEPTA can be slower than that.
 # TRAVEL_SYNC_FETCH=1 fetches inline instead (used by tests).
 SYNC_FETCH = os.environ.get("TRAVEL_SYNC_FETCH") == "1"
+# Hidden until SEPTA data works (Nov 19, 2026: SEPTA's alert-detail API timed out from Render).
+# Set TRAVEL_BOARD_PUBLIC=1 in Render to show links, list it in the sitemap and allow indexing.
+PUBLIC = os.environ.get("TRAVEL_BOARD_PUBLIC") == "1"
 UA = {"User-Agent": "DelcoSpot travel board (https://www.delcospot.com)"}
 
 SEPTA_INDEX = "https://www3.septa.org/api/Alerts/index.php"
@@ -490,7 +493,7 @@ def _render_page(data):
     html = _page("Delco travel: SEPTA status and road incidents · DelcoSpot",
                  "SEPTA alerts, advisories and detours for Delaware County rail lines and trolleys, "
                  "plus road incidents and roadwork in the county.",
-                 "/travel/", "".join(parts), **page_kw)
+                 "/travel/", "".join(parts), indexable=PUBLIC, **page_kw)
     return html.replace("</style>", PAGE_CSS + "</style>", 1)
 
 

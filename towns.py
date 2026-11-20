@@ -123,7 +123,8 @@ def _page(title, description, path, body, indexable=True, current=None, extra_he
     robots = "" if indexable else '<meta name="robots" content="noindex,follow">\n'
     url = f"{SITE}{path}"
     # Header links; the page you are on is left out so it doesn't link to itself.
-    links = [("/", "Home"), ("/town/", "Towns"), ("/travel/", "Travel"), ("/stats/", "Statistics")]
+    from travel import PUBLIC as travel_public
+    links = [("/", "Home"), ("/town/", "Towns")] + ([("/travel/", "Travel")] if travel_public else []) + [("/stats/", "Statistics")]
     nav = " &middot; ".join(f'<a href="{h}">{t}</a>' for h, t in links if h != current)
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">

@@ -220,8 +220,10 @@ def create_app():
             ("/stats/", date.today().isoformat(), "daily"),
             ("/map/", _filedate("map", "index.html"), "monthly"),
             ("/town/", date.today().isoformat(), "daily"),
-            ("/travel/", date.today().isoformat(), "hourly"),
         ]
+        from travel import PUBLIC as travel_public
+        if travel_public:
+            pages.append(("/travel/", date.today().isoformat(), "hourly"))
         # Only towns with enough calls to be worth indexing (see towns.py).
         # A database hiccup must never break the sitemap, so fall back to none.
         try:
