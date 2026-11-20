@@ -298,6 +298,8 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
   .tiles-grid { grid-template-columns: 1fr; }
 }
 
+@keyframes ds-autofill { from { opacity: 1; } to { opacity: 1; } }
+#f-search:-webkit-autofill { animation-name: ds-autofill; animation-duration: 0.01s; }
 .travel-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem; }
 .travel-card .travel-stamp { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 0.6rem; }
 .travel-rows { list-style: none; margin: 0; padding: 0; }
@@ -1061,6 +1063,7 @@ a.tile { line-height: normal; }
   /* ---------- Section navigation ---------- */
   function showSection(id) {
     $all('.page').forEach(function (sec) { sec.hidden = sec.id !== id; });
+    if (id === 'dispatch') setTimeout(function () { if (clearAutofilledSearch()) applyDispatchFilters(); }, 400);
     $all('.nav-link[data-target]').forEach(function (a) {
       a.setAttribute('aria-current', a.dataset.target === id ? 'page' : 'false');
     });
@@ -1487,22 +1490,28 @@ a.tile { line-height: normal; }
     save.textContent = chosen && chosen !== saved ? 'Save ' + chosen + ' as my town' : 'Save as my town';
     clear.hidden = !saved;
   }
-  // Some browsers autofill a saved email into the search box despite autocomplete="off".
-  // Clear an email-looking value unless the person typed it themselves.
+  // Some browsers (Chrome especially) autofill a saved email into the search box
+  // despite autocomplete="off", and can do it late, when the section is shown.
+  // An email-looking value the person didn't type is cleared wherever it is noticed:
+  // when filtering runs, on autofill's own input/change events, and via the
+  // :-webkit-autofill animation hook below.
+  var searchTyped = false;
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  function clearAutofilledSearch() {
+    var el = document.getElementById('f-search');
+    if (el && !searchTyped && EMAIL_RE.test(el.value.trim())) { el.value = ''; return true; }
+    return false;
+  }
   function guardSearchAutofill() {
     var el = document.getElementById('f-search');
     if (!el) return;
-    var typed = false;
-    el.addEventListener('keydown', function () { typed = true; });
-    el.addEventListener('paste', function () { typed = true; });
-    function check() {
-      if (!typed && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value.trim())) {
-        el.value = '';
-        if (typeof applyDispatchFilters === 'function') applyDispatchFilters();
-      }
-    }
-    [300, 1000, 2500].forEach(function (ms) { setTimeout(check, ms); });
+    el.addEventListener('keydown', function () { searchTyped = true; });
+    el.addEventListener('paste', function () { searchTyped = true; });
+    function check() { if (clearAutofilledSearch()) applyDispatchFilters(); }
+    el.addEventListener('input', check);
     el.addEventListener('change', check);
+    el.addEventListener('animationstart', function (e) { if (e.animationName === 'ds-autofill') check(); });
+    [300, 1000, 2500, 5000].forEach(function (ms) { setTimeout(check, ms); });
   }
 
   function wireMyTownBar() {
@@ -1531,6 +1540,7 @@ a.tile { line-height: normal; }
   }
 
   function applyDispatchFilters() {
+    clearAutofilledSearch();
     var q = document.getElementById('f-search').value.trim().toLowerCase();
     var town = document.getElementById('f-town').value;
     var type = document.getElementById('f-type').value;
