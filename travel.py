@@ -125,24 +125,36 @@ def _resolve(line, routes):
     return None
 
 
-def _status_from_detail(rows):
-    """Turn get_alert_data rows into (state, label, message)."""
-    current = advisory = detour = ""
-    snow = False
+NOTICE_LABELS = {"alert": "Alert", "detour": "Detour", "advisory": "Advisory"}
+_SEVERITY = ["alert", "detour", "advisory"]  # worst first
+
+
+def _notices_from_detail(rows):
+    """All notices (alerts, detours, advisories) for a route, worst first, duplicates removed.
+    Mirrors SEPTA's own 'All Notices' view rather than showing alerts only."""
+    found, seen, snow = [], set(), False
     for r in rows or []:
-        current = current or _clean(r.get("current_message"))
-        advisory = advisory or _clean(r.get("advisory_message"))
-        detour = detour or _clean(r.get("detour_message"))
+        if not isinstance(r, dict):
+            continue
+        for field, kind in (("current_message", "alert"), ("detour_message", "detour"),
+                            ("advisory_message", "advisory")):
+            text = _clean(r.get(field), 600)
+            if text and (kind, text) not in seen:
+                seen.add((kind, text))
+                found.append({"type": kind, "label": NOTICE_LABELS[kind], "text": text})
         snow = snow or _yes(r.get("isSnow"))
-    if current:
-        return "alert", "Service alert", current
-    if detour:
-        return "detour", "Detour", detour
-    if snow:
-        return "advisory", "Snow schedule", advisory
-    if advisory:
-        return "advisory", "Advisory", advisory
-    return "ok", "Normal service", ""
+    if snow and not any(n["type"] == "advisory" for n in found):
+        found.append({"type": "advisory", "label": "Advisory", "text": "Snow schedule in effect."})
+    found.sort(key=lambda n: _SEVERITY.index(n["type"]))
+    return found
+
+
+def _line_status(notices):
+    """(state, pill label) from the worst notice on the line."""
+    if not notices:
+        return "ok", "Normal service"
+    worst = notices[0]["type"]
+    return worst, {"alert": "Service alert", "detour": "Detour", "advisory": "Advisory"}[worst]
 
 
 def fetch_septa():
@@ -156,22 +168,24 @@ def fetch_septa():
 
     def detail(pair):
         line, row = pair
+        base = {"key": line["key"], "name": line["name"], "kind": line["kind"]}
         if row is None:
-            return {"key": line["key"], "name": line["name"], "kind": line["kind"],
-                    "state": "unknown", "label": "Not in SEPTA's feed", "message": ""}
+            return {**base, "state": "unknown", "label": "Not in SEPTA's feed", "message": "", "notices": []}
         flagged = any(_yes(row.get(k)) for k in ("isalert", "isadvisory", "isdetour", "issuppend", "isSnow"))
-        if not flagged:
-            state, label, msg = "ok", "Normal service", ""
-        else:
+        notices = []
+        if flagged:
             try:
                 rows = _get_json(SEPTA_DETAIL, params={"route_id": row.get("route_id")})
-                state, label, msg = _status_from_detail(rows if isinstance(rows, list) else [rows])
-                if state == "ok":  # flagged, but no text came back
-                    state, label = "advisory", "Advisory"
+                notices = _notices_from_detail(rows if isinstance(rows, list) else [rows])
+                if not notices:  # flagged, but no text came back
+                    notices = [{"type": "advisory", "label": "Advisory",
+                                "text": "SEPTA has posted a notice. See SEPTA for details."}]
             except Exception:
-                state, label, msg = "advisory", "Advisory", "Details unavailable. Check SEPTA."
-        return {"key": line["key"], "name": line["name"], "kind": line["kind"],
-                "state": state, "label": label, "message": msg}
+                notices = [{"type": "advisory", "label": "Advisory",
+                            "text": "Details unavailable. Check SEPTA."}]
+        state, label = _line_status(notices)
+        return {**base, "state": state, "label": label,
+                "message": notices[0]["text"] if notices else "", "notices": notices}
 
     with ThreadPoolExecutor(max_workers=len(LINES)) as pool:
         return list(pool.map(detail, resolved))
@@ -292,6 +306,11 @@ def _eastern(iso):
     return dt.strftime("%I:%M %p").lstrip("0")
 
 
+EXT = 'target="_blank" rel="noopener noreferrer"'
+SITE = "https://www.delcospot.com"
+SEPTA_ALERTS = "https://www.septa.org/alerts/"
+PA511 = "https://www.511pa.com"
+
 PAGE_CSS = """
 .board{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:8px}
 .row{display:flex;gap:12px;align-items:flex-start;padding:11px 14px;border-bottom:1px solid var(--border)}
@@ -300,37 +319,60 @@ PAGE_CSS = """
 .ok{background:#E3F1E6;color:#14432A}.advisory,.detour{background:#FBF0DC;color:#6B4A0C}
 .alert{background:#FBE4E1;color:#8A1F14}.unknown{background:#EEECE7;color:#5A645E}
 .kind{font-size:12px;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
+.ntype{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:0 7px;border-radius:4px;margin-right:4px}
+.ntype.alert{background:#FBE4E1;color:#8A1F14}.ntype.detour{background:#FBF0DC;color:#6B4A0C}.ntype.advisory{background:#E8ECF2;color:#2A3B52}
 .stamp{font-size:14px;color:var(--soft);margin:0 0 10px}
 """
+
+
+def _jsonld(updated_iso):
+    import json
+    graph = [
+        {"@type": "WebPage", "@id": f"{SITE}/travel/#webpage", "url": f"{SITE}/travel/",
+         "name": "Delaware County travel: SEPTA status and road incidents",
+         "description": "SEPTA service status for Delaware County rail lines and trolleys, plus active road incidents and roadwork.",
+         "inLanguage": "en-US", "isPartOf": {"@type": "WebSite", "name": "DelcoSpot", "url": SITE + "/"},
+         "about": {"@type": "AdministrativeArea", "name": "Delaware County, Pennsylvania"},
+         **({"dateModified": updated_iso} if updated_iso else {})},
+        {"@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "DelcoSpot", "item": SITE + "/"},
+            {"@type": "ListItem", "position": 2, "name": "Travel", "item": f"{SITE}/travel/"}]},
+    ]
+    blob = json.dumps({"@context": "https://schema.org", "@graph": graph}).replace("</", "<\\/")
+    return f'<script type="application/ld+json">{blob}</script>\n'
 
 
 def _render_page(data):
     from towns import _page  # same shell and styles as the town pages
     s, r = data["septa"], data["roads"]
-    parts = ['<h1>Getting around Delco</h1>',
-             '<p class="lede">SEPTA service on the lines that serve Delaware County, and active road '
-             'incidents and roadwork in the county. Refreshed about every 5 minutes.</p>',
-             "<h2>SEPTA</h2>"]
+    parts = ['<p class="crumbs"><a href="/">DelcoSpot</a> &rsaquo; Travel</p>',
+             '<h1>Delaware County travel: SEPTA status and road incidents</h1>',
+             '<p class="lede">All current SEPTA notices (alerts, advisories and detours) for the Media/Wawa, Wilmington/Newark, Airport and '
+             'Paoli/Thorndale Regional Rail lines, the 101 and 102 trolleys and the Norristown High Speed Line, '
+             'plus active road incidents and roadwork in Delaware County, Pennsylvania. '
+             'Refreshed about every 5 minutes.</p>',
+             "<h2>SEPTA service notices</h2>"]
     if s["lines"] is None:
-        parts.append('<p class="stamp">SEPTA status is unavailable right now. '
-                     '<a href="https://www.septa.org/alerts/">Check SEPTA alerts</a>.</p>')
+        parts.append(f'<p class="stamp">SEPTA status is unavailable right now. '
+                     f'<a href="{SEPTA_ALERTS}" {EXT}>Check SEPTA alerts</a>.</p>')
     else:
         stale = " (SEPTA didn't respond to the last check)" if s["state"] == "stale" else ""
         parts.append(f'<p class="stamp">Updated {escape(_eastern(s["updated_at"]))}{stale}</p><div class="board">')
         for ln in s["lines"]:
-            msg = f'<p class="msg">{escape(ln["message"])}</p>' if ln["message"] else ""
+            msg = "".join(f'<p class="msg"><span class="ntype {escape(n["type"])}">{escape(n["label"])}</span> '
+                          f'{escape(n["text"])}</p>' for n in ln.get("notices", []))
             parts.append(f'<div class="row"><div class="what"><span class="kind">{escape(ln["kind"])}</span><br>'
                          f'{escape(ln["name"])}{msg}</div><span class="pill {escape(ln["state"])}">'
                          f'{escape(ln["label"])}</span></div>')
         parts.append("</div>")
 
-    parts.append("<h2>Roads</h2>")
+    parts.append("<h2>Delaware County road incidents</h2>")
     if r["state"] == "not_configured":
-        parts.append('<p class="stamp">Road incidents are coming soon. For now, see '
-                     '<a href="https://www.511pa.com">511PA</a>.</p>')
+        parts.append(f'<p class="stamp">Road incidents are coming soon. For now, see '
+                     f'<a href="{PA511}" {EXT}>511PA</a>.</p>')
     elif r["events"] is None:
-        parts.append('<p class="stamp">Road information is unavailable right now. '
-                     '<a href="https://www.511pa.com">Check 511PA</a>.</p>')
+        parts.append(f'<p class="stamp">Road information is unavailable right now. '
+                     f'<a href="{PA511}" {EXT}>Check 511PA</a>.</p>')
     else:
         stale = " (511PA didn't respond to the last check)" if r["state"] == "stale" else ""
         parts.append(f'<p class="stamp">Updated {escape(_eastern(r["updated_at"]))}{stale}</p>')
@@ -346,13 +388,16 @@ def _render_page(data):
                              f'<p class="msg">{escape(" · ".join(bits))}</p>{detail}</div></div>')
             parts.append("</div>")
 
-    parts.append('<p class="note">Sources: SEPTA and PennDOT 511PA. Information can lag real conditions; '
-                 'check <a href="https://www.septa.org/alerts/">SEPTA</a> or '
-                 '<a href="https://www.511pa.com">511PA</a> before you travel.</p>')
-    html = _page("Delaware County travel: SEPTA status and road incidents · DelcoSpot",
-                 "Live SEPTA status for the Media/Wawa, Wilmington/Newark, Airport and Paoli/Thorndale lines, "
-                 "the 101 and 102 trolleys and the Norristown High Speed Line, plus Delaware County road incidents.",
-                 "/travel/", "".join(parts))
+    parts.append(f'<p class="note">Sources: SEPTA and PennDOT 511PA. Information can lag real conditions; '
+                 f'check <a href="{SEPTA_ALERTS}" {EXT}>SEPTA</a> or '
+                 f'<a href="{PA511}" {EXT}>511PA</a> before you travel. '
+                 f'See also <a href="/town/">fire and EMS activity by town</a> and '
+                 f'<a href="/stats/">countywide statistics</a>.</p>')
+    html = _page("Delco travel: SEPTA status and road incidents · DelcoSpot",
+                 "SEPTA alerts, advisories and detours for Delaware County rail lines and trolleys, "
+                 "plus road incidents and roadwork in the county.",
+                 "/travel/", "".join(parts), current="/travel/",
+                 extra_head=_jsonld(s["updated_at"] if s["lines"] is not None else None))
     return html.replace("</style>", PAGE_CSS + "</style>", 1)
 
 
