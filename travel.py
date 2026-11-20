@@ -24,7 +24,6 @@ import os
 import re
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from html import escape, unescape
 
@@ -105,10 +104,29 @@ def _when(text):
     return clock if dt.date() == today else f"{dt.strftime('%b')} {dt.day}, {clock}"
 
 
+class FeedError(Exception):
+    pass
+
+
 def _get_json(url, **kw):
-    r = requests.get(url, headers=UA, timeout=TIMEOUT, **kw)
-    r.raise_for_status()
-    return r.json()
+    """GET and parse JSON. Tolerates a byte-order mark or a wrong content type;
+    raises FeedError with a short reason (HTTP status, timeout, not JSON)."""
+    import json
+    try:
+        r = requests.get(url, headers=UA, timeout=TIMEOUT, **kw)
+    except requests.Timeout:
+        raise FeedError("timeout")
+    except requests.RequestException as exc:
+        raise FeedError(f"connection: {type(exc).__name__}")
+    if r.status_code != 200:
+        raise FeedError(f"HTTP {r.status_code}")
+    text = r.content.decode("utf-8-sig", errors="replace").strip()
+    if not text:
+        return []
+    try:
+        return json.loads(text)
+    except ValueError:
+        raise FeedError(f"not JSON: {text[:60]!r}")
 
 
 # ---------- SEPTA ----------
@@ -146,10 +164,14 @@ def _notices_from_detail(rows):
     return found
 
 
+OK_LABEL = "No issues reported"
+UNAVAILABLE_LABEL = "Status unavailable"
+
+
 def _line_status(notices):
-    """(state, label): the worst notice wins; no alert or detour means On time."""
+    """(state, label): the worst notice wins; no alert or detour = no issues reported."""
     if not notices:
-        return "ok", "On time"
+        return "ok", OK_LABEL
     worst = notices[0]["type"]
     return worst, NOTICE_LABELS[worst]
 
@@ -164,26 +186,48 @@ def fetch_septa():
     global _last_detail_error
     resolved = [(line, _resolve(line, routes)) for line in LINES]
 
-    def detail(pair):
-        line, row = pair
+    # One system-wide request for every route's messages, rather than a burst of
+    # one request per line. If it fails, fall back to one request per line, in turn.
+    by_route, system_error = None, None
+    try:
+        rows = _get_json(SEPTA_DETAIL)
+        rows = rows if isinstance(rows, list) else [rows]
+        by_route = {}
+        for r in rows:
+            if isinstance(r, dict):
+                by_route.setdefault(str(r.get("route_id", "")).lower(), []).append(r)
+    except FeedError as exc:
+        system_error = str(exc)
+
+    errors = []
+    results = []
+    for line, row in resolved:
         base = {"key": line["key"], "name": line["name"], "kind": line["kind"]}
         if row is None:
-            return {**base, "state": "unknown", "label": "Not in SEPTA's feed", "message": "",
-                    "notices": [], "error": None}
-        try:
-            rows = _get_json(SEPTA_DETAIL, params={"route_id": row.get("route_id")})
-            notices = _notices_from_detail(rows if isinstance(rows, list) else [rows])
-        except Exception as exc:
-            return {**base, "state": "unknown", "label": "Status unavailable", "message": "",
-                    "notices": [], "error": type(exc).__name__}
+            results.append({**base, "state": "unknown", "label": "Not in SEPTA's feed",
+                            "message": "", "notices": []})
+            continue
+        rid = str(row.get("route_id", ""))
+        if by_route is not None:
+            line_rows = by_route.get(rid.lower(), [])  # absent from the full list = nothing posted
+        else:
+            try:
+                line_rows = _get_json(SEPTA_DETAIL, params={"route_id": rid})
+                line_rows = line_rows if isinstance(line_rows, list) else [line_rows]
+            except FeedError as exc:
+                errors.append(f"{rid}: {exc}")
+                results.append({**base, "state": "unavailable", "label": UNAVAILABLE_LABEL,
+                                "message": "Check with SEPTA for more details.", "notices": []})
+                continue
+        notices = _notices_from_detail(line_rows)
         state, label = _line_status(notices)
-        return {**base, "state": state, "label": label,
-                "message": notices[0]["text"] if notices else "", "notices": notices, "error": None}
+        results.append({**base, "state": state, "label": label,
+                        "message": notices[0]["text"] if notices else "", "notices": notices})
 
-    with ThreadPoolExecutor(max_workers=len(LINES)) as pool:
-        results = list(pool.map(detail, resolved))
-    errors = [r.pop("error") for r in results if r.get("error")]
-    _last_detail_error = errors[0] if errors else None
+    if errors:
+        _last_detail_error = (f"system-wide: {system_error}; " if system_error else "") + "; ".join(errors[:3])
+    else:
+        _last_detail_error = f"system-wide: {system_error} (per-line fallback worked)" if system_error else None
     return results
 
 
@@ -314,7 +358,7 @@ PAGE_CSS = """
 .row:last-child{border-bottom:0}.row .what{flex:1}.row .msg{font-size:14px;color:var(--soft);margin:3px 0 0}
 .pill{font-size:13px;padding:2px 10px;border-radius:999px;white-space:nowrap;font-weight:600}
 .ok{background:#E3F1E6;color:#14432A}.advisory,.detour{background:#FBF0DC;color:#6B4A0C}
-.alert{background:#FBE4E1;color:#8A1F14}.unknown{background:#EEECE7;color:#5A645E}
+.alert{background:#FBE4E1;color:#8A1F14}.unavailable,.unknown{background:#EEECE7;color:#5A645E}
 .kind{font-size:12px;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
 .ntype{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:0 7px;border-radius:4px;margin-right:4px}
 .ntype.alert{background:#FBE4E1;color:#8A1F14}.ntype.detour{background:#FBF0DC;color:#6B4A0C}.ntype.advisory{background:#E8ECF2;color:#2A3B52}
@@ -350,14 +394,17 @@ def _render_page(data):
              'Refreshed about every 5 minutes.</p>',
              "<h2>SEPTA service notices</h2>"]
     if s["lines"] is None:
-        parts.append(f'<p class="stamp">SEPTA status is unavailable right now. '
-                     f'<a href="{SEPTA_ALERTS}" {EXT}>Check SEPTA alerts</a>.</p>')
+        parts.append(f'<p class="stamp">Status unavailable. Check with '
+                     f'<a href="{SEPTA_ALERTS}" {EXT}>SEPTA</a> for more details.</p>')
     else:
         stale = " (SEPTA didn't respond to the last check)" if s["state"] == "stale" else ""
         parts.append(f'<p class="stamp">Updated {escape(_eastern(s["updated_at"]))}{stale}</p><div class="board">')
         for ln in s["lines"]:
             msg = "".join(f'<p class="msg"><span class="ntype {escape(n["type"])}">{escape(n["label"])}</span> '
                           f'{escape(n["text"])}</p>' for n in ln.get("notices", []))
+            if ln["state"] == "unavailable":
+                msg = (f'<p class="msg">Check with <a href="{SEPTA_ALERTS}" {EXT}>SEPTA</a> '
+                       f'for more details.</p>')
             parts.append(f'<div class="row"><div class="what"><span class="kind">{escape(ln["kind"])}</span><br>'
                          f'{escape(ln["name"])}{msg}</div><span class="pill {escape(ln["state"])}">'
                          f'{escape(ln["label"])}</span></div>')

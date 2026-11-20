@@ -309,7 +309,7 @@ button.btn-outline.nav-link:hover, a.btn-outline.nav-link:hover {
 .travel-pill.ok { background: var(--moss-tint); color: var(--slate-700); }
 .travel-pill.detour { background: var(--amber-tint); color: var(--amber-dark); }
 .travel-pill.alert { background: var(--brick-tint); color: var(--brick); }
-.travel-pill.unknown { background: var(--paper); color: var(--ink-soft); border: 1px solid var(--border); }
+.travel-pill.unknown, .travel-pill.unavailable { background: var(--paper); color: var(--ink-soft); border: 1px solid var(--border); }
 .travel-roads { margin: 0.8rem 0 0; font-size: 0.95rem; }
 .resource-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.25rem; }
 .resource-link {
@@ -2019,14 +2019,17 @@ a.tile { line-height: normal; }
         var s = data.septa || {}, r = data.roads || {};
         rowsEl.innerHTML = '';
         if (!s.lines) {
-          stampEl.textContent = 'SEPTA status is unavailable right now.';
+          stampEl.textContent = 'Status unavailable. Check with SEPTA for more details.';
         } else {
           stampEl.textContent = 'SEPTA updated ' + timeOf(s.updated_at) + (s.state === 'stale' ? ' (last check failed)' : '');
           s.lines.forEach(function (ln) {
             var li = document.createElement('li');
             var name = document.createElement('span'); name.className = 'travel-name'; name.textContent = ln.name;
             var notes = ln.notices || [];
-            if (notes.length) {
+            if (ln.state === 'unavailable' && ln.message) {
+              var um = document.createElement('span'); um.className = 'travel-msg'; um.textContent = ln.message;
+              name.appendChild(um);
+            } else if (notes.length) {
               var msg = document.createElement('span'); msg.className = 'travel-msg';
               var first = notes[0].text;
               if (first.length > 140) first = first.slice(0, 139) + '\u2026';
@@ -2043,7 +2046,7 @@ a.tile { line-height: normal; }
         else roadsEl.textContent = r.events.length + ' active road ' + (r.events.length === 1 ? 'event' : 'events') + ' in Delaware County.';
       })
       .catch(function () {
-        stampEl.textContent = 'Travel status is unavailable right now.';
+        stampEl.textContent = 'Status unavailable. Check with SEPTA for more details.';
       });
   }
 
