@@ -125,36 +125,33 @@ def _resolve(line, routes):
     return None
 
 
-NOTICE_LABELS = {"alert": "Alert", "detour": "Detour", "advisory": "Advisory"}
-_SEVERITY = ["alert", "detour", "advisory"]  # worst first
+NOTICE_LABELS = {"alert": "Alert", "detour": "Detour"}
+_SEVERITY = ["alert", "detour"]  # worst first
+_last_detail_error = None
 
 
 def _notices_from_detail(rows):
-    """All notices (alerts, detours, advisories) for a route, worst first, duplicates removed.
-    Mirrors SEPTA's own 'All Notices' view rather than showing alerts only."""
-    found, seen, snow = [], set(), False
+    """Alerts and detours for one route, deduplicated. Advisories are ignored on purpose:
+    the board shows only On time, Alert or Detour."""
+    found, seen = [], set()
     for r in rows or []:
         if not isinstance(r, dict):
             continue
-        for field, kind in (("current_message", "alert"), ("detour_message", "detour"),
-                            ("advisory_message", "advisory")):
+        for field, kind in (("current_message", "alert"), ("detour_message", "detour")):
             text = _clean(r.get(field), 600)
             if text and (kind, text) not in seen:
                 seen.add((kind, text))
                 found.append({"type": kind, "label": NOTICE_LABELS[kind], "text": text})
-        snow = snow or _yes(r.get("isSnow"))
-    if snow and not any(n["type"] == "advisory" for n in found):
-        found.append({"type": "advisory", "label": "Advisory", "text": "Snow schedule in effect."})
     found.sort(key=lambda n: _SEVERITY.index(n["type"]))
     return found
 
 
 def _line_status(notices):
-    """(state, pill label) from the worst notice on the line."""
+    """(state, label): the worst notice wins; no alert or detour means On time."""
     if not notices:
-        return "ok", "Normal service"
+        return "ok", "On time"
     worst = notices[0]["type"]
-    return worst, {"alert": "Service alert", "detour": "Detour", "advisory": "Advisory"}[worst]
+    return worst, NOTICE_LABELS[worst]
 
 
 def fetch_septa():
@@ -164,31 +161,30 @@ def fetch_septa():
     if not isinstance(routes, list) or not routes:
         raise ValueError("SEPTA alerts index returned no routes")
 
+    global _last_detail_error
     resolved = [(line, _resolve(line, routes)) for line in LINES]
 
     def detail(pair):
         line, row = pair
         base = {"key": line["key"], "name": line["name"], "kind": line["kind"]}
         if row is None:
-            return {**base, "state": "unknown", "label": "Not in SEPTA's feed", "message": "", "notices": []}
-        flagged = any(_yes(row.get(k)) for k in ("isalert", "isadvisory", "isdetour", "issuppend", "isSnow"))
-        notices = []
-        if flagged:
-            try:
-                rows = _get_json(SEPTA_DETAIL, params={"route_id": row.get("route_id")})
-                notices = _notices_from_detail(rows if isinstance(rows, list) else [rows])
-                if not notices:  # flagged, but no text came back
-                    notices = [{"type": "advisory", "label": "Advisory",
-                                "text": "SEPTA has posted a notice. See SEPTA for details."}]
-            except Exception:
-                notices = [{"type": "advisory", "label": "Advisory",
-                            "text": "Details unavailable. Check SEPTA."}]
+            return {**base, "state": "unknown", "label": "Not in SEPTA's feed", "message": "",
+                    "notices": [], "error": None}
+        try:
+            rows = _get_json(SEPTA_DETAIL, params={"route_id": row.get("route_id")})
+            notices = _notices_from_detail(rows if isinstance(rows, list) else [rows])
+        except Exception as exc:
+            return {**base, "state": "unknown", "label": "Status unavailable", "message": "",
+                    "notices": [], "error": type(exc).__name__}
         state, label = _line_status(notices)
         return {**base, "state": state, "label": label,
-                "message": notices[0]["text"] if notices else "", "notices": notices}
+                "message": notices[0]["text"] if notices else "", "notices": notices, "error": None}
 
     with ThreadPoolExecutor(max_workers=len(LINES)) as pool:
-        return list(pool.map(detail, resolved))
+        results = list(pool.map(detail, resolved))
+    errors = [r.pop("error") for r in results if r.get("error")]
+    _last_detail_error = errors[0] if errors else None
+    return results
 
 
 # ---------- PennDOT / 511PA ----------
@@ -283,6 +279,7 @@ def health():
     try:
         s, r = _cache["septa"] or {}, _cache["roads"] or {}
         return {"septa_updated_at": _iso(s.get("at")), "septa_error": s.get("error"),
+                "septa_detail_error": _last_detail_error,
                 "roads_configured": bool(_rcrs_creds()),
                 "roads_updated_at": _iso(r.get("at")), "roads_error": r.get("error")}
     except Exception:
